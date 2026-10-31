@@ -26,6 +26,8 @@ https://clase.su-dominio/profesor  ──►  Traefik :443 (HTTPS) ─► conten
 
 ## 2. Apuntar el dominio al VPS (DNS)
 
+> Cree el registro **antes** de desplegar (paso 8). Si no, Let's Encrypt puede fallar en el primer intento (vea «Solución de problemas»).
+
 En el panel DNS del dominio (en Hostinger: hPanel → Dominios → DNS / Nameservers) cree un registro:
 
 | Tipo | Nombre | Apunta a | TTL |
@@ -114,13 +116,13 @@ Pulse **Create**.
 
 Pestaña **Advanced → Ports → Add Port**. Agregue **dos** puertos:
 
-| Published Port | Target Port | Protocol | Publish Mode |
+| Published Port | Published Port Mode | Target Port | Protocol |
 |---|---|---|---|
-| 8189 | 8189 | **UDP** | **Host** |
-| 8189 | 8189 | **TCP** | **Host** |
+| 8189 | Ingress | 8189 | **UDP** |
+| 8189 | Ingress | 8189 | **TCP** |
 
 - Los dos números **deben ser iguales** (8189 → 8189).
-- Si su versión de Dokploy no muestra «Publish Mode», déjelo como está; el modo Ingress funciona en la mayoría de los casos.
+- Use **Ingress** (el valor predeterminado). Con **Host**, Dokploy advierte que al redesplegar el contenedor viejo puede retener el puerto y el nuevo no arranca; habría que detenerlo e iniciarlo a mano. Ingress se probó en un VPS de Hostinger con Dokploy v0.30 y el video funciona.
 - Si necesita otro número, cambie también `PUERTO_MEDIOS` en las variables y use ese mismo número en ambas columnas y en el firewall.
 
 ## 8. Desplegar
@@ -173,7 +175,7 @@ Si los estudiantes tienen Internet lento (datos móviles), use el perfil **Red s
 | Síntoma | Causa probable y solución |
 |---|---|
 | El botón «Compartir pantalla» está deshabilitado | La página no está en `https://`. Revise el dominio y el certificado (paso 6) |
-| Error de certificado / «No seguro» | El DNS todavía no apunta al VPS o Let's Encrypt no terminó. Espere unos minutos y revise **Domains** en Dokploy |
+| Error de certificado / «No seguro» | El DNS todavía no apunta al VPS o Let's Encrypt no terminó. Espere unos minutos. Si creó el registro DNS **después** de desplegar, Traefik puede quedarse con el certificado provisional («TRAEFIK DEFAULT CERT»). Espere 10 minutos, edite el dominio en **Domains**, desactive HTTPS y guarde, y luego vuelva a activarlo con Let's Encrypt y guarde |
 | Los estudiantes ven «Esperando al profesor…» aunque el profesor transmite, o la imagen nunca carga | El puerto **8189** no llega al contenedor. Revise el firewall (paso 3) y los puertos (paso 7), y que `IP_PUBLICA` sea la IP real del VPS |
 | `/salud` devuelve error 502 / 503 | El contenedor no arrancó. Revise **Logs**. Lo más común es que `PROFESOR_CLAVE` falte o tenga menos de 8 caracteres |
 | «Demasiados intentos» al entrar | Hubo 8 claves incorrectas seguidas desde esa conexión. Espere 5 minutos |
