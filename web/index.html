@@ -57,10 +57,10 @@
 <script>
 "use strict";
 (() => {
-  const C = window.CLASE || { puertoWebrtc: 8889, ruta: "clase" };
+  const C = window.CLASE || { online: true, ruta: "clase" };
   const $ = (id) => document.getElementById(id);
-  // Se usa el mismo host con el que el estudiante abrió la página.
-  const base = `http://${location.hostname}:${C.puertoWebrtc}/${C.ruta}/`;
+  // WHEP pasa por el mismo servidor (y dominio) con que se abrió la página.
+  const base = `${location.origin}/${C.ruta}/`;
   const video = $("video");
   let reader = null;
 
@@ -88,12 +88,15 @@
     try { await cargarReader(); }
     catch {
       estado(false, "No se alcanza el servidor del aula",
-        "Verifique que está conectado a la misma red Wi-Fi que el profesor. Reintentando…");
+        C.online ? "Verifique su conexión a Internet. Reintentando…"
+                 : "Verifique que está conectado a la misma red Wi-Fi que el profesor. Reintentando…");
       return setTimeout(conectar, 3000);
     }
     reader = new window.MediaMTXWebRTCReader({
       url: base + "whep",
       onError: (err) => {
+        // 401 = venció el código de acceso: volver a pedirlo.
+        if (/401/.test(String(err))) { reader?.close(); location.href = "/acceso.html?rol=estudiante"; return; }
         // 404 = el profesor todavía no transmite; el lector reintenta solo.
         const esperando = /404|not found|closed/i.test(String(err));
         estado(false,

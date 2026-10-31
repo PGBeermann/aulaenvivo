@@ -1,14 +1,23 @@
 # Clase en Vivo UNACHI
 
-Transmisión de la pantalla del profesor a los estudiantes **dentro de la red Wi‑Fi del aula**, con latencia menor a 1 segundo (WebRTC). Los estudiantes solo necesitan un navegador y **no instalan nada**. La señal no sale de la red local y, después de la primera ejecución, no hace falta Internet.
+Transmisión de la pantalla del profesor a los estudiantes, con latencia menor a 1 segundo (WebRTC). Los estudiantes solo necesitan un navegador y **no instalan nada**.
+
+Hay dos formas de usarlo:
+
+| Modo | Dónde están los estudiantes | Cómo se instala |
+|---|---|---|
+| **Online** | En sus casas, por Internet | En un VPS con Docker/Dokploy. Vea **[DESPLIEGUE_DOKPLOY.md](DESPLIEGUE_DOKPLOY.md)** |
+| **Local** | En el aula, en la misma red Wi‑Fi | En el equipo del profesor (este documento). La señal no sale de la red local y, después de la primera ejecución, no hace falta Internet |
+
+## Modo local (red Wi‑Fi del aula)
 
 ```
 Profesor (este equipo)                                   Estudiantes (misma Wi-Fi)
 ┌──────────────────────────────────────────┐            ┌────────────────────────┐
 │ Navegador: http://localhost:8080/profesor │──WHIP──┐   │ http://IP:8080/        │
 │   (captura de pantalla, se codifica 1 vez)│        │   │  (QR proyectado)       │
-│ servidor_clase.py  :8080  páginas + estado│        ▼   │                        │
-│ MediaMTX v1.21.1   :8889  WHIP/WHEP ──────┼──WHEP─────▶│ celulares, laptops,    │
+│ servidor_clase.py  :8080  páginas + proxy │        ▼   │                        │
+│   └► MediaMTX v1.21.1 (127.0.0.1:8889) ───┼──WHEP─────▶│ celulares, laptops,    │
 │                    :8189  medios UDP/TCP  │            │ tabletas               │
 └──────────────────────────────────────────┘            └────────────────────────┘
 ```
@@ -19,11 +28,14 @@ Profesor (este equipo)                                   Estudiantes (misma Wi-F
 |---|---|
 | `iniciar_clase.bat` | Arranque en Windows 10/11 (doble clic) |
 | `iniciar_clase.sh` | Arranque en Linux/macOS (`./iniciar_clase.sh`) |
-| `abrir_firewall.bat` / `.sh` | Abre los puertos solo para la subred local (se ejecuta **una vez**) |
-| `servidor_clase.py` | Descarga e inicia MediaMTX, sirve las páginas y detecta la IP (solo biblioteca estándar) |
+| `abrir_firewall.bat` / `.sh` | Abre los puertos solo para la subred local (se ejecuta **una vez**). El 8889 ya no hace falta, pero abrirlo no causa problemas |
+| `servidor_clase.py` | Descarga e inicia MediaMTX, sirve las páginas, reenvía WHIP/WHEP a MediaMTX y controla el acceso (solo biblioteca estándar) |
 | `mediamtx.yml` | Configuración endurecida de MediaMTX |
+| `Dockerfile` | Imagen para el modo online en un VPS (Dokploy) |
+| `DESPLIEGUE_DOKPLOY.md` | Guía paso a paso para el VPS de Hostinger con Dokploy |
 | `web/profesor.html` | Panel del profesor: compartir pantalla, QR, espectadores y Mbps |
 | `web/index.html` | Página del estudiante: video en vivo, pantalla completa y reconexión automática |
+| `web/acceso.html` | Pantalla de contraseña del profesor y código de estudiantes (solo modo online) |
 | `web/estilo.css` | Identidad visual UNACHI (verde Pantone 364 C, rojo Pantone 187 C) |
 | `web/vendor/qrcode.js` | Generador de QR sin conexión (K. Arase, licencia MIT) |
 
@@ -58,7 +70,8 @@ Profesor (este equipo)                                   Estudiantes (misma Wi-F
 
 ## Seguridad (configurada en `mediamtx.yml`)
 
-- **Publicar** solo es posible desde el propio equipo del profesor (127.0.0.1 / ::1). Si un estudiante intenta transmitir, recibe `401 authentication error`.
+- **Publicar** solo es posible desde el propio equipo del profesor. La señalización de MediaMTX escucha solo en `127.0.0.1:8889`, y `servidor_clase.py` reenvía las peticiones WHIP solo si vienen de localhost. Si un estudiante intenta transmitir, recibe `401`.
+- En el **modo online**, publicar exige la contraseña `PROFESOR_CLAVE` y ver puede exigir el código `CLAVE_ESTUDIANTES`. Las sesiones usan cookies firmadas (HMAC, `HttpOnly`, `SameSite=Strict`, `Secure`).
 - **Ver:** solo existe la ruta `clase`. Cualquier otra ruta se rechaza.
 - **La API de control** solo escucha en `127.0.0.1`. El panel del profesor no se abre desde otros equipos (se redirige a la vista del estudiante).
 - **Protocolos desactivados:** RTSP, HLS, SRT y MoQ. RTMP queda disponible solo para OBS local.
@@ -71,6 +84,7 @@ Profesor (este equipo)                                   Estudiantes (misma Wi-F
 |---|---|
 | El estudiante ve «No se alcanza el servidor del aula» | **Aislamiento de clientes (AP isolation)** en la Wi‑Fi institucional, o firewall. Pruebe `ping IP-del-profesor` desde otro equipo. Pida a TI una SSID o VLAN de aula sin aislamiento, o use un router propio. |
 | La página carga pero el video no aparece | Está bloqueado el **UDP 8189**. Ejecute `abrir_firewall.bat`. MediaMTX también ofrece TCP 8189 como respaldo. |
+| «El puerto 1935 / 8189 ya está en uso» | Hay otra copia del programa abierta (por ejemplo, desde otra carpeta). Ciérrela desde el Administrador de tareas (`mediamtx.exe`). |
 | Windows no deja pasar nada aunque existan las reglas | Si alguna vez pulsó **Cancelar** en el aviso del firewall para `python.exe` o `mediamtx.exe`, Windows creó reglas de **bloqueo** que tienen prioridad. Bórrelas en `wf.msc` → *Reglas de entrada*. |
 | El QR muestra una IP que no es la de la Wi‑Fi (VPN, Hyper‑V, VirtualBox) | Elija la IP correcta en el selector del panel, o inicie con `iniciar_clase.bat --ip 192.168.x.y`. Si el video no conecta, añada esa IP en `webrtcAdditionalHosts` de `mediamtx.yml`. |
 | «El puerto 8889 ya está en uso» | Hay otra instancia de MediaMTX abierta. Ciérrela desde el Administrador de tareas. |
@@ -99,6 +113,16 @@ Se hicieron el 23‑sep‑2026 con **MediaMTX v1.21.1 real** y Chromium en modo 
 - Ctrl+C cierra también MediaMTX.
 
 Los scripts `.bat` no pudieron ejecutarse en Windows durante las pruebas. Se revisaron manualmente y usan finales de línea CRLF.
+
+El 31‑oct‑2026 se probó el **modo online** en Windows con MediaMTX v1.21.1 real y Chromium:
+
+- Sin contraseña no se abre el panel, no se consulta el estado y no se puede transmitir (401). Sin código de estudiante no se puede ver (401).
+- La contraseña incorrecta se rechaza y una cookie manipulada no da acceso.
+- El profesor publica por WHIP a través del proxy y el estudiante, entrando con su código, recibe el video 1280×720. El contador marca 1 espectador y unos 1,07 Mbps.
+- La publicación con «Bearer Token» (como OBS) funciona y la sesión se cierra con DELETE.
+- El modo local sigue igual: desde la LAN no se puede transmitir ni abrir el panel.
+
+La imagen Docker no se construyó en este equipo porque no tiene Docker; se construye en Dokploy.
 
 ## Referencias
 

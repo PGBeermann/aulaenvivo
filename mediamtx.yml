@@ -4,11 +4,14 @@
 # servidor_clase.py). Las claves omitidas toman su valor por defecto.
 #
 # Modelo de seguridad:
-#   - PUBLICAR (transmitir) sólo desde el propio equipo del profesor
-#     (127.0.0.1 / ::1): ningún estudiante puede suplantar la transmisión.
-#   - VER (read) permitido a cualquier equipo que alcance la red local.
-#   - API de control sólo desde localhost (el panel del profesor la consulta
-#     a través de servidor_clase.py, que actúa como intermediario).
+#   - La señalización WHIP/WHEP sólo escucha en 127.0.0.1: navegadores y OBS
+#     llegan a través de servidor_clase.py, que decide quién puede transmitir
+#     (profesor: localhost en modo local, contraseña en modo online) y quién
+#     puede ver (estudiantes, con código opcional en modo online).
+#   - PUBLICAR sólo desde 127.0.0.1 / ::1 (es decir, a través del proxy).
+#   - API de control sólo desde localhost.
+#   - En modo online servidor_clase.py ajusta algunas claves con variables
+#     MTX_* (IP pública anunciada, RTMP desactivado).
 ###############################################################################
 
 logLevel: info
@@ -62,17 +65,20 @@ moq: false
 
 # RTMP queda activo sólo como alternativa para OBS en modo RTMP
 # (rtmp://localhost/clase). La publicación sigue limitada a localhost.
+# En modo online se desactiva (MTX_RTMP=no).
 rtmp: true
 rtmpAddress: :1935
 
 ###############################################################################
 # WebRTC — transporte principal (latencia < 1 s)
 webrtc: true
-# Señalización HTTP (WHIP/WHEP) — debe estar abierto en el firewall (TCP).
-webrtcAddress: :8889
+# Señalización HTTP (WHIP/WHEP): sólo local; se accede por el puerto web
+# (8080) a través de servidor_clase.py.
+webrtcAddress: 127.0.0.1:8889
 webrtcEncryption: false
 webrtcAllowOrigins: ["*"]
-# Medios — debe estar abierto en el firewall (UDP).
+# Medios — debe estar abierto en el firewall (UDP). En el VPS se publica
+# este mismo puerto (PUERTO_MEDIOS) en UDP y TCP.
 webrtcLocalUDPAddress: :8189
 # Respaldo TCP para redes que filtran UDP entre clientes (mismo puerto, TCP).
 webrtcLocalTCPAddress: :8189
@@ -84,8 +90,8 @@ webrtcIPsFromInterfacesExcludeList: []
 # si el equipo tiene adaptadores virtuales (VPN, Hyper-V, VirtualBox) y los
 # estudiantes no logran conectar.  Ejemplo: ["192.168.1.50"]
 webrtcAdditionalHosts: []
-# Red local: no se requieren servidores STUN/TURN (y el aula puede no tener
-# salida a Internet).
+# No se requieren servidores STUN/TURN: en la LAN todos se ven entre sí y en
+# el VPS el servidor anuncia su IP pública.
 webrtcICEServers2: []
 webrtcHandshakeTimeout: 10s
 webrtcTrackGatherTimeout: 2s

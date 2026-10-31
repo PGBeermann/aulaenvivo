@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#299100">
+<title>Acceso · Clase en Vivo · UNACHI</title>
+<link rel="stylesheet" href="estilo.css">
+<style>
+  main { min-height: calc(100vh - 80px); display: grid; place-items: center; padding: 24px 16px; }
+  form { width: 100%; max-width: 380px; background: var(--tarjeta); border: 1px solid var(--borde);
+         border-radius: var(--radio); padding: 24px; display: grid; gap: 14px; }
+  h1 { font-family: var(--serif); color: var(--verde); font-size: 1.35rem; margin: 0; }
+  @media (prefers-color-scheme: dark) { h1 { color: #6fcf4a; } }
+  p { margin: 0; color: var(--gris); font-size: .92rem; }
+  label { display: grid; gap: 6px; font-size: .85rem; font-weight: 600; color: var(--gris); }
+  input { font: inherit; font-size: 1.1rem; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--borde);
+          background: var(--tarjeta); color: var(--texto); width: 100%; }
+  input:focus { outline: 2px solid var(--verde); outline-offset: 1px; }
+  .btn { justify-content: center; }
+  .error { color: var(--rojo); font-weight: 600; font-size: .9rem; min-height: 1.2em; }
+  .otro { font-size: .85rem; text-align: center; }
+  .otro a { color: var(--gris); }
+</style>
+</head>
+<body>
+<header class="cabecera">
+  <img class="logo" src="logo-unachi.png" alt="UNACHI" onerror="this.remove()">
+  <div class="titulos">
+    <span class="inst">Universidad Autónoma de Chiriquí</span>
+    <span class="sub">Clase en Vivo</span>
+  </div>
+</header>
+<main>
+  <form id="form" autocomplete="on">
+    <h1 id="titulo">Ingresar a la clase</h1>
+    <p id="texto">Escriba el código que le dio su profesor.</p>
+    <input type="text" name="username" id="usuario" autocomplete="username" hidden>
+    <label><span id="etiqueta">Código de acceso</span>
+      <input id="clave" type="text" required autofocus autocapitalize="none" autocomplete="off" spellcheck="false">
+    </label>
+    <button class="btn grande" id="btn" type="submit">Entrar</button>
+    <div id="error" class="error" role="alert"></div>
+    <div class="otro"><a id="otro" href="#"></a></div>
+  </form>
+</main>
+<script>
+"use strict";
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const rol = new URLSearchParams(location.search).get("rol") === "profesor" ? "profesor" : "estudiante";
+  if (rol === "profesor") {
+    document.title = "Acceso del profesor · Clase en Vivo · UNACHI";
+    $("titulo").textContent = "Panel del profesor";
+    $("texto").textContent = "Escriba la contraseña del profesor para transmitir la clase.";
+    $("etiqueta").textContent = "Contraseña";
+    $("clave").type = "password";
+    $("clave").autocomplete = "current-password";
+    $("usuario").value = "profesor";
+    $("otro").textContent = "Soy estudiante";
+    $("otro").href = "/";
+  } else {
+    $("otro").textContent = "Soy el profesor";
+    $("otro").href = "/acceso.html?rol=profesor";
+  }
+
+  $("form").onsubmit = async (e) => {
+    e.preventDefault();
+    $("btn").disabled = true;
+    $("error").textContent = "";
+    try {
+      const r = await fetch("/api/acceso", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rol, clave: $("clave").value }),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (r.ok && d.destino) { location.href = d.destino; return; }
+      $("error").textContent = d.error || "No se pudo ingresar (" + r.status + ").";
+      $("clave").select();
+    } catch {
+      $("error").textContent = "No se alcanza el servidor. Verifique su conexión a Internet.";
+    }
+    $("btn").disabled = false;
+  };
+})();
+</script>
+</body>
+</html>

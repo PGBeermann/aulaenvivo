@@ -1,0 +1,11 @@
+.git
+.gitignore
+.dockerignore
+mediamtx/
+clase-en-vivo-unachi/
+__pycache__/
+*.pyc
+*.bat
+*.sh
+*.md
+.env

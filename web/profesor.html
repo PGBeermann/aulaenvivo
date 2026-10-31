@@ -50,14 +50,17 @@
     <span class="inst">Universidad Autónoma de Chiriquí</span>
     <span class="sub">Clase en Vivo · Panel del profesor</span>
   </div>
-  <div class="der"><span id="insignia" class="insignia"><span class="punto"></span><span id="insigniaTxt">Sin transmitir</span></span></div>
+  <div class="der">
+    <span id="insignia" class="insignia"><span class="punto"></span><span id="insigniaTxt">Sin transmitir</span></span>
+    <button id="btnSalir" class="btn sec oculto" style="color:#fff;border-color:rgba(255,255,255,.5);padding:5px 12px;font-size:.8rem">Cerrar sesión</button>
+  </div>
 </header>
 
 <main>
   <section class="tarjeta">
     <h2>Transmisión de pantalla</h2>
     <div id="avisoSeguro" class="aviso oculto">
-      Este panel debe abrirse como <b>http://localhost:<span class="pw"></span>/profesor.html</b> en el equipo del profesor:
+      <span id="avisoSeguroTxt">Este panel debe abrirse como <b>http://localhost:<span class="pw"></span>/profesor.html</b> en el equipo del profesor:</span>
       el navegador sólo permite capturar la pantalla en un contexto seguro (localhost o HTTPS).
     </div>
     <div class="vista">
@@ -97,6 +100,7 @@
       <h2>Acceso de los estudiantes</h2>
       <div id="qr" class="qr"></div>
       <div id="enlace" class="enlace"></div>
+      <div id="codigoBox" class="enlace oculto" style="border-style:solid">Código de acceso: <b id="codigo"></b></div>
       <label class="campo" id="campoIp">Red / IP del profesor
         <select id="selIp"></select>
       </label>
@@ -122,7 +126,8 @@
         <summary>Transmitir con OBS Studio (opcional)</summary>
         <ol>
           <li>OBS 30 o superior → <i>Ajustes → Emisión</i>.</li>
-          <li>Servicio: <b>WHIP</b> · Servidor: <code>http://localhost:8889/clase/whip</code></li>
+          <li>Servicio: <b>WHIP</b> · Servidor: <code id="obsServidor">http://localhost:8889/clase/whip</code></li>
+          <li id="obsToken" class="oculto">Bearer Token: la <b>misma contraseña</b> del panel del profesor.</li>
           <li><i>Salida</i> (modo avanzado): x264, perfil <code>baseline</code>, tune <code>zerolatency</code>, intervalo de fotogramas clave 1 s, 1500–2500 kbps.</li>
           <li>Pulse «Iniciar transmisión» en OBS. No use este panel al mismo tiempo.</li>
         </ol>
@@ -130,14 +135,15 @@
     </section>
   </aside>
 </main>
-<div class="pie">Clase en Vivo UNACHI · transmisión local por WebRTC (MediaMTX <span id="ver"></span>) · la señal no sale de la red del aula</div>
+<div class="pie">Clase en Vivo UNACHI · <span id="pieTxt">transmisión local por WebRTC</span> (MediaMTX <span id="ver"></span>) · <span id="pieTxt2">la señal no sale de la red del aula</span></div>
 
 <div id="proyeccion" class="oculto" title="Clic o Esc para cerrar">
   <div class="franja"></div>
   <h1>Escanee para ver la clase</h1>
   <div id="qrGrande" class="qrgrande"></div>
   <div id="urlGrande" class="url"></div>
-  <div style="color:#555;font-size:2.2vh">Conéctese primero a la misma red Wi-Fi del aula</div>
+  <div id="codigoGrande" class="url oculto" style="color:var(--rojo)"></div>
+  <div id="proyeccionTxt" style="color:#555;font-size:2.2vh">Conéctese primero a la misma red Wi-Fi del aula</div>
 </div>
 
 <script src="vendor/qrcode.js"></script>
@@ -145,8 +151,7 @@
 <script>
 "use strict";
 (() => {
-  const C = window.CLASE || { ips: [location.hostname], ip: location.hostname, puertoWeb: location.port || 80,
-                              puertoWebrtc: 8889, ruta: "clase", version: "" };
+  const C = window.CLASE || { online: true, url: location.origin + "/", ruta: "clase", version: "" };
   const $ = (id) => document.getElementById(id);
   const PRESETS = {
     texto:       { w: 1920, h: 1080, fps: 15, kbps: 2500, hint: "detail" },
@@ -154,15 +159,29 @@
     movimiento:  { w: 1280, h: 720,  fps: 30, kbps: 2500, hint: "motion" },
     red:         { w: 1280, h: 720,  fps: 10, kbps: 800,  hint: "detail" },
   };
-  const base = `http://localhost:${C.puertoWebrtc}/${C.ruta}/`;
+  // WHIP/WHEP pasan por el mismo servidor web (proxy hacia MediaMTX).
+  const base = `${location.origin}/${C.ruta}/`;
   let publisher = null, stream = null, inicioVivo = null, ultimoBytes = null, ultimoT = null;
 
   document.querySelectorAll(".pw").forEach((e) => (e.textContent = C.puertoWeb));
   $("ver").textContent = C.version || "";
+  if (C.online) {
+    $("avisoSeguroTxt").innerHTML = "Este panel debe abrirse con <b>https://</b> (dominio con certificado):";
+    $("pieTxt").textContent = "transmisión por Internet con WebRTC";
+    $("pieTxt2").textContent = "acceso protegido con contraseña";
+    $("proyeccionTxt").textContent = "Funciona desde cualquier conexión a Internet: celular, laptop o tableta";
+    $("obsServidor").textContent = base + "whip";
+    $("obsToken").classList.remove("oculto");
+    $("btnSalir").classList.remove("oculto");
+    $("btnSalir").onclick = async () => {
+      await fetch("/api/salir", { method: "POST" }).catch(() => {});
+      location.href = "/acceso.html?rol=profesor";
+    };
+  }
   const msg = (t, error = false) => { $("msg").textContent = t; $("msg").classList.toggle("error", error); };
 
   // ---------- QR y enlace ----------
-  const urlEstudiante = (ip) => `http://${ip}:${C.puertoWeb}/`;
+  const urlEstudiante = (ip) => (C.online ? C.url : `http://${ip}:${C.puertoWeb}/`);
   const svgQR = (texto) => {
     const q = qrcode(0, "M"); q.addData(texto); q.make();
     return q.createSvgTag({ cellSize: 8, margin: 2, scalable: true });
@@ -175,11 +194,12 @@
     $("urlGrande").textContent = url;
     $("lnkEstudiante").href = url;
   };
-  C.ips.forEach((ip) => $("selIp").add(new Option(ip, ip)));
-  if (C.ips.length < 2) $("campoIp").classList.add("oculto");
+  const ips = C.online ? [""] : C.ips;
+  ips.forEach((ip) => $("selIp").add(new Option(ip, ip)));
+  if (ips.length < 2) $("campoIp").classList.add("oculto");
   $("selIp").onchange = pintarQR;
   pintarQR();
-  if (C.ips[0] === "127.0.0.1") {
+  if (!C.online && C.ips[0] === "127.0.0.1") {
     $("msgServidor").textContent = "No se detectó una red local: conecte el equipo al Wi-Fi del aula y reinicie.";
     $("msgServidor").classList.add("error");
   }
@@ -230,7 +250,7 @@
       $("btnIniciar").disabled = !window.isSecureContext;
       msg("Listo. Elija la calidad y pulse «Compartir pantalla».");
     } catch {
-      msg("El servidor de medios (MediaMTX) no responde en el puerto " + C.puertoWebrtc + ". Reintentando…", true);
+      msg("El servidor de medios (MediaMTX) no responde. Reintentando…", true);
       setTimeout(prepararse, 3000);
     }
   };
@@ -328,7 +348,14 @@
   const actualizarEstado = async () => {
     try {
       const r = await fetch("/api/estado", { cache: "no-store" });
+      if (r.status === 401 && C.online) { location.href = "/acceso.html?rol=profesor"; return; }
       const d = await r.json();
+      if (d.codigoEstudiantes) {
+        $("codigo").textContent = d.codigoEstudiantes;
+        $("codigoBox").classList.remove("oculto");
+        $("codigoGrande").textContent = "Código: " + d.codigoEstudiantes;
+        $("codigoGrande").classList.remove("oculto");
+      }
       const vivo = d.enVivo;
       $("insignia").classList.toggle("vivo", vivo);
       $("insigniaTxt").textContent = vivo ? "EN VIVO" : "Sin transmitir";
