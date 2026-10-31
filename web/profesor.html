@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clase en Vivo · Panel del profesor · UNACHI</title>
+<link rel="stylesheet" href="estilo.css">
+<style>
+  main { max-width: 1280px; margin: 0 auto; padding: 18px; display: grid; gap: 18px;
+         grid-template-columns: minmax(0, 1.6fr) minmax(300px, 1fr); }
+  @media (max-width: 900px) { main { grid-template-columns: 1fr; } }
+  .tarjeta { background: var(--tarjeta); border: 1px solid var(--borde); border-radius: var(--radio); padding: 16px; }
+  .tarjeta h2 { font-family: var(--serif); font-size: 1.1rem; margin: 0 0 12px; color: var(--verde); }
+  @media (prefers-color-scheme: dark) { .tarjeta h2 { color: #6fcf4a; } }
+  .vista { position: relative; background: #000; border-radius: 8px; aspect-ratio: 16/9; overflow: hidden; }
+  .vista video { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .vista .vacio { position: absolute; inset: 0; display: grid; place-items: center; color: #aaa; text-align: center; padding: 20px; }
+  .controles { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; align-items: center; }
+  .ajustes { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 10px; margin-top: 14px; }
+  label.campo { display: flex; flex-direction: column; gap: 4px; font-size: .82rem; color: var(--gris); font-weight: 600; }
+  select { font: inherit; padding: 8px; border-radius: 8px; border: 1px solid var(--borde); background: var(--tarjeta); color: var(--texto); }
+  .metricas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .metrica { background: var(--verde-claro); border-radius: 8px; padding: 10px; text-align: center; }
+  .metrica b { display: block; font-size: 1.6rem; font-variant-numeric: tabular-nums; }
+  .metrica span { font-size: .75rem; color: var(--gris); }
+  .qr { background: #fff; border-radius: 8px; padding: 10px; display: grid; place-items: center; }
+  .qr svg { width: 100%; max-width: 280px; height: auto; }
+  .enlace { font-family: ui-monospace, Consolas, monospace; font-size: 1.05rem; text-align: center; word-break: break-all;
+            margin: 10px 0; padding: 8px; border: 1px dashed var(--borde); border-radius: 8px; }
+  .aviso { border-left: 4px solid var(--rojo); background: rgba(196,18,55,.08); padding: 10px 12px; border-radius: 6px; font-size: .9rem; margin-bottom: 12px; }
+  .msg { font-size: .88rem; color: var(--gris); min-height: 1.3em; margin-top: 8px; }
+  .msg.error { color: var(--rojo); font-weight: 600; }
+  details { font-size: .9rem; }
+  details summary { cursor: pointer; font-weight: 600; }
+  details code { background: var(--verde-claro); padding: 1px 5px; border-radius: 4px; }
+  details li { margin: 4px 0; }
+  /* Proyección del QR a pantalla completa */
+  #proyeccion { position: fixed; inset: 0; background: #fff; color: #111; z-index: 50; display: flex; flex-direction: column;
+                align-items: center; justify-content: center; gap: 2vh; padding: 3vh; }
+  #proyeccion .qrgrande svg { height: 62vh; width: auto; }
+  #proyeccion h1 { font-family: var(--serif); color: var(--verde); margin: 0; font-size: 5vh; }
+  #proyeccion .url { font-family: ui-monospace, Consolas, monospace; font-size: 4.5vh; font-weight: 700; }
+  #proyeccion .franja { position: absolute; top: 0; left: 0; right: 0; height: 1.4vh; background: var(--verde); border-bottom: .6vh solid var(--rojo); }
+</style>
+</head>
+<body>
+<header class="cabecera">
+  <img class="logo" src="logo-unachi.png" alt="UNACHI" onerror="this.remove()">
+  <div class="titulos">
+    <span class="inst">Universidad Autónoma de Chiriquí</span>
+    <span class="sub">Clase en Vivo · Panel del profesor</span>
+  </div>
+  <div class="der"><span id="insignia" class="insignia"><span class="punto"></span><span id="insigniaTxt">Sin transmitir</span></span></div>
+</header>
+
+<main>
+  <section class="tarjeta">
+    <h2>Transmisión de pantalla</h2>
+    <div id="avisoSeguro" class="aviso oculto">
+      Este panel debe abrirse como <b>http://localhost:<span class="pw"></span>/profesor.html</b> en el equipo del profesor:
+      el navegador sólo permite capturar la pantalla en un contexto seguro (localhost o HTTPS).
+    </div>
+    <div class="vista">
+      <video id="vistaPrevia" autoplay muted playsinline></video>
+      <div id="vistaVacia" class="vacio">Vista previa de lo que verán los estudiantes.<br>Pulse «Compartir pantalla» para comenzar.</div>
+    </div>
+    <div class="ajustes">
+      <label class="campo">Calidad
+        <select id="calidad">
+          <option value="texto">Texto nítido · 1080p · 15 fps</option>
+          <option value="equilibrado" selected>Equilibrado · 720p · 20 fps</option>
+          <option value="movimiento">Video/animación · 720p · 30 fps</option>
+          <option value="red">Red saturada · 720p · 10 fps</option>
+        </select>
+      </label>
+      <label class="campo">Audio
+        <select id="audio">
+          <option value="no" selected>Sin audio (profesor en el aula)</option>
+          <option value="sistema">Audio del sistema / pestaña</option>
+          <option value="mic">Micrófono</option>
+        </select>
+      </label>
+      <label class="campo">Códec de video
+        <select id="codec"></select>
+      </label>
+    </div>
+    <div class="controles">
+      <button id="btnIniciar" class="btn grande" disabled>Compartir pantalla</button>
+      <button id="btnDetener" class="btn rojo grande oculto">Detener transmisión</button>
+      <button id="btnCambiar" class="btn sec oculto" title="Elegir otra ventana o pantalla">Cambiar ventana</button>
+    </div>
+    <div id="msg" class="msg">Conectando con el servidor de medios…</div>
+  </section>
+
+  <aside style="display:grid; gap:18px; align-content:start;">
+    <section class="tarjeta">
+      <h2>Acceso de los estudiantes</h2>
+      <div id="qr" class="qr"></div>
+      <div id="enlace" class="enlace"></div>
+      <label class="campo" id="campoIp">Red / IP del profesor
+        <select id="selIp"></select>
+      </label>
+      <div class="controles">
+        <button id="btnProyectar" class="btn">Proyectar QR</button>
+        <button id="btnCopiar" class="btn sec">Copiar enlace</button>
+        <a id="lnkEstudiante" class="btn sec" target="_blank" rel="noopener">Ver como estudiante</a>
+      </div>
+    </section>
+
+    <section class="tarjeta">
+      <h2>Estado</h2>
+      <div class="metricas">
+        <div class="metrica"><b id="mEsp">0</b><span>espectadores</span></div>
+        <div class="metrica"><b id="mBit">–</b><span>Mbps enviados</span></div>
+        <div class="metrica"><b id="mTiempo">00:00</b><span>en vivo</span></div>
+      </div>
+      <div id="msgServidor" class="msg"></div>
+    </section>
+
+    <section class="tarjeta">
+      <details>
+        <summary>Transmitir con OBS Studio (opcional)</summary>
+        <ol>
+          <li>OBS 30 o superior → <i>Ajustes → Emisión</i>.</li>
+          <li>Servicio: <b>WHIP</b> · Servidor: <code>http://localhost:8889/clase/whip</code></li>
+          <li><i>Salida</i> (modo avanzado): x264, perfil <code>baseline</code>, tune <code>zerolatency</code>, intervalo de fotogramas clave 1 s, 1500–2500 kbps.</li>
+          <li>Pulse «Iniciar transmisión» en OBS. No use este panel al mismo tiempo.</li>
+        </ol>
+      </details>
+    </section>
+  </aside>
+</main>
+<div class="pie">Clase en Vivo UNACHI · transmisión local por WebRTC (MediaMTX <span id="ver"></span>) · la señal no sale de la red del aula</div>
+
+<div id="proyeccion" class="oculto" title="Clic o Esc para cerrar">
+  <div class="franja"></div>
+  <h1>Escanee para ver la clase</h1>
+  <div id="qrGrande" class="qrgrande"></div>
+  <div id="urlGrande" class="url"></div>
+  <div style="color:#555;font-size:2.2vh">Conéctese primero a la misma red Wi-Fi del aula</div>
+</div>
+
+<script src="vendor/qrcode.js"></script>
+<script src="config.js"></script>
+<script>
+"use strict";
+(() => {
+  const C = window.CLASE || { ips: [location.hostname], ip: location.hostname, puertoWeb: location.port || 80,
+                              puertoWebrtc: 8889, ruta: "clase", version: "" };
+  const $ = (id) => document.getElementById(id);
+  const PRESETS = {
+    texto:       { w: 1920, h: 1080, fps: 15, kbps: 2500, hint: "detail" },
+    equilibrado: { w: 1280, h: 720,  fps: 20, kbps: 1500, hint: "detail" },
+    movimiento:  { w: 1280, h: 720,  fps: 30, kbps: 2500, hint: "motion" },
+    red:         { w: 1280, h: 720,  fps: 10, kbps: 800,  hint: "detail" },
+  };
+  const base = `http://localhost:${C.puertoWebrtc}/${C.ruta}/`;
+  let publisher = null, stream = null, inicioVivo = null, ultimoBytes = null, ultimoT = null;
+
+  document.querySelectorAll(".pw").forEach((e) => (e.textContent = C.puertoWeb));
+  $("ver").textContent = C.version || "";
+  const msg = (t, error = false) => { $("msg").textContent = t; $("msg").classList.toggle("error", error); };
+
+  // ---------- QR y enlace ----------
+  const urlEstudiante = (ip) => `http://${ip}:${C.puertoWeb}/`;
+  const svgQR = (texto) => {
+    const q = qrcode(0, "M"); q.addData(texto); q.make();
+    return q.createSvgTag({ cellSize: 8, margin: 2, scalable: true });
+  };
+  const pintarQR = () => {
+    const url = urlEstudiante($("selIp").value);
+    $("qr").innerHTML = svgQR(url);
+    $("qrGrande").innerHTML = svgQR(url);
+    $("enlace").textContent = url;
+    $("urlGrande").textContent = url;
+    $("lnkEstudiante").href = url;
+  };
+  C.ips.forEach((ip) => $("selIp").add(new Option(ip, ip)));
+  if (C.ips.length < 2) $("campoIp").classList.add("oculto");
+  $("selIp").onchange = pintarQR;
+  pintarQR();
+  if (C.ips[0] === "127.0.0.1") {
+    $("msgServidor").textContent = "No se detectó una red local: conecte el equipo al Wi-Fi del aula y reinicie.";
+    $("msgServidor").classList.add("error");
+  }
+
+  $("btnCopiar").onclick = async () => {
+    try { await navigator.clipboard.writeText($("enlace").textContent); $("btnCopiar").textContent = "¡Copiado!"; }
+    catch { $("btnCopiar").textContent = "Copie manualmente"; }
+    setTimeout(() => ($("btnCopiar").textContent = "Copiar enlace"), 1800);
+  };
+  const cerrarProyeccion = () => {
+    $("proyeccion").classList.add("oculto");
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
+  };
+  $("btnProyectar").onclick = () => {
+    $("proyeccion").classList.remove("oculto");
+    $("proyeccion").requestFullscreen?.().catch(() => {});
+  };
+  $("proyeccion").onclick = cerrarProyeccion;
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") cerrarProyeccion(); });
+
+  // ---------- Contexto seguro ----------
+  if (!window.isSecureContext || !navigator.mediaDevices?.getDisplayMedia) {
+    $("avisoSeguro").classList.remove("oculto");
+  }
+
+  // ---------- Códecs disponibles ----------
+  const poblarCodecs = async () => {
+    const pc = new RTCPeerConnection();
+    pc.addTransceiver("video", { direction: "sendonly" });
+    const sdp = (await pc.createOffer()).sdp.toLowerCase();
+    pc.close();
+    const opciones = [["h264/90000", "H.264 (máxima compatibilidad)"], ["vp8/90000", "VP8"], ["vp9/90000", "VP9"], ["av1/90000", "AV1"]];
+    for (const [v, t] of opciones) if (sdp.includes(v)) $("codec").add(new Option(t, v));
+  };
+
+  // ---------- Carga de publisher.js servido por MediaMTX ----------
+  const cargarPublisher = () => new Promise((ok, mal) => {
+    if (window.MediaMTXWebRTCPublisher) return ok();
+    const s = document.createElement("script");
+    s.src = base + "publisher.js";
+    s.onload = ok;
+    s.onerror = () => { s.remove(); mal(new Error("sin MediaMTX")); };
+    document.head.appendChild(s);
+  });
+  const prepararse = async () => {
+    try {
+      await Promise.all([cargarPublisher(), poblarCodecs()]);
+      $("btnIniciar").disabled = !window.isSecureContext;
+      msg("Listo. Elija la calidad y pulse «Compartir pantalla».");
+    } catch {
+      msg("El servidor de medios (MediaMTX) no responde en el puerto " + C.puertoWebrtc + ". Reintentando…", true);
+      setTimeout(prepararse, 3000);
+    }
+  };
+
+  // ---------- Transmisión ----------
+  const capturar = async () => {
+    const p = PRESETS[$("calidad").value];
+    const tipoAudio = $("audio").value;
+    const s = await navigator.mediaDevices.getDisplayMedia({
+      video: { width: { ideal: p.w }, height: { ideal: p.h }, frameRate: { ideal: p.fps, max: p.fps } },
+      audio: tipoAudio === "sistema",
+    });
+    if (tipoAudio === "mic") {
+      try {
+        const m = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } });
+        m.getAudioTracks().forEach((t) => s.addTrack(t));
+      } catch { msg("No se obtuvo el micrófono; se transmite sólo video.", true); }
+    }
+    const v = s.getVideoTracks()[0];
+    if ("contentHint" in v) v.contentHint = p.hint;
+    v.addEventListener("ended", detener); // el usuario pulsó «Dejar de compartir» del navegador
+    return s;
+  };
+
+  const publicar = (s) => {
+    const p = PRESETS[$("calidad").value];
+    publisher = new window.MediaMTXWebRTCPublisher({
+      url: base + "whip",
+      stream: s,
+      videoCodec: $("codec").value || "h264/90000",
+      videoBitrate: p.kbps,
+      audioCodec: "opus/48000",
+      audioBitrate: 64,
+      audioVoice: $("audio").value === "mic",
+      onError: (err) => msg("Reconectando: " + err, true),
+      onConnected: () => { msg("Transmitiendo. Los estudiantes pueden abrir el enlace o escanear el QR."); inicioVivo ??= Date.now(); },
+    });
+  };
+
+  const iniciar = async () => {
+    try {
+      $("btnIniciar").disabled = true;
+      stream = await capturar();
+    } catch (e) {
+      $("btnIniciar").disabled = false;
+      msg(e.name === "NotAllowedError" ? "Se canceló la selección de pantalla." : "No se pudo capturar la pantalla: " + e.message, e.name !== "NotAllowedError");
+      return;
+    }
+    $("vistaPrevia").srcObject = stream;
+    $("vistaVacia").classList.add("oculto");
+    $("btnIniciar").classList.add("oculto");
+    $("btnDetener").classList.remove("oculto");
+    $("btnCambiar").classList.remove("oculto");
+    ["calidad", "audio", "codec"].forEach((id) => ($(id).disabled = true));
+    msg("Conectando con el servidor de medios…");
+    publicar(stream);
+  };
+
+  function detener() {
+    if (publisher) { publisher.close(); publisher = null; }
+    if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
+    $("vistaPrevia").srcObject = null;
+    $("vistaVacia").classList.remove("oculto");
+    $("btnDetener").classList.add("oculto");
+    $("btnCambiar").classList.add("oculto");
+    $("btnIniciar").classList.remove("oculto");
+    $("btnIniciar").disabled = false;
+    ["calidad", "audio", "codec"].forEach((id) => ($(id).disabled = false));
+    inicioVivo = null;
+    msg("Transmisión detenida.");
+  }
+
+  // Cambiar de ventana sin cortar a los estudiantes: nueva captura y nueva sesión WHIP
+  // (overridePublisher: true en mediamtx.yml hace que reemplace a la anterior).
+  const cambiar = async () => {
+    let nuevo;
+    try { nuevo = await capturar(); } catch { return; }
+    const viejo = stream;
+    if (publisher) publisher.close();
+    stream = nuevo;
+    $("vistaPrevia").srcObject = stream;
+    publicar(stream);
+    viejo?.getTracks().forEach((t) => t.stop()); // stop() no dispara el evento "ended"
+  };
+
+  $("btnIniciar").onclick = iniciar;
+  $("btnDetener").onclick = detener;
+  $("btnCambiar").onclick = cambiar;
+  window.addEventListener("beforeunload", () => publisher?.close());
+
+  // ---------- Estado (espectadores, bitrate, tiempo) ----------
+  const mmss = (ms) => { const s = Math.floor(ms / 1000); const h = Math.floor(s / 3600);
+    const mm = String(Math.floor((s % 3600) / 60)).padStart(2, "0"), ss = String(s % 60).padStart(2, "0");
+    return h ? `${h}:${mm}:${ss}` : `${mm}:${ss}`; };
+  const actualizarEstado = async () => {
+    try {
+      const r = await fetch("/api/estado", { cache: "no-store" });
+      const d = await r.json();
+      const vivo = d.enVivo;
+      $("insignia").classList.toggle("vivo", vivo);
+      $("insigniaTxt").textContent = vivo ? "EN VIVO" : "Sin transmitir";
+      $("mEsp").textContent = d.espectadores;
+      const ahora = performance.now();
+      if (vivo && ultimoBytes !== null && d.bytesEntrada >= ultimoBytes) {
+        $("mBit").textContent = (((d.bytesEntrada - ultimoBytes) * 8) / ((ahora - ultimoT) / 1000) / 1e6).toFixed(2);
+      } else if (!vivo) $("mBit").textContent = "–";
+      ultimoBytes = d.bytesEntrada; ultimoT = ahora;
+      if (vivo && !publisher && d.fuente) { inicioVivo ??= Date.now(); $("msgServidor").textContent = "Transmisión externa detectada (" + d.fuente + ", p. ej. OBS)."; }
+      else if (d.servidor) $("msgServidor").textContent = "";
+      else $("msgServidor").textContent = "MediaMTX no responde.";
+      if (!vivo && !publisher) inicioVivo = null;
+      $("mTiempo").textContent = inicioVivo ? mmss(Date.now() - inicioVivo) : "00:00";
+    } catch { /* servidor web detenido */ }
+  };
+  setInterval(actualizarEstado, 2000);
+  actualizarEstado();
+  prepararse();
+})();
+</script>
+</body>
+</html>

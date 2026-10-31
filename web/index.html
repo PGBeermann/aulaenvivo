@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#299100">
+<title>Clase en Vivo · UNACHI</title>
+<link rel="stylesheet" href="estilo.css">
+<style>
+  html, body { height: 100%; }
+  body { display: flex; flex-direction: column; background: #0c0f0d; }
+  .cabecera { padding: 8px 14px; }
+  .cabecera img.logo { height: 36px; }
+  .escenario { position: relative; flex: 1; min-height: 0; background: #000; }
+  .escenario video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
+  .escenario.llenar video { object-fit: cover; }
+  .capa { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+          gap: 14px; color: #dfe7e1; text-align: center; padding: 24px; background: radial-gradient(circle at center, #16241a, #070907); }
+  .capa h1 { font-family: var(--serif); font-weight: normal; font-size: 1.5rem; margin: 0; }
+  .capa p { margin: 0; color: #9fb0a4; max-width: 34em; }
+  .girador { width: 44px; height: 44px; border-radius: 50%; border: 4px solid rgba(255,255,255,.15); border-top-color: var(--verde); animation: gira 1s linear infinite; }
+  @keyframes gira { to { transform: rotate(360deg); } }
+  .barra { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; padding: 8px; background: #111; }
+  .barra .btn { padding: 8px 14px; font-size: .9rem; }
+  .barra .btn.sec { color: #e7eee8; border-color: #333; }
+  .barra .btn.sec:hover { background: #1c2e18; }
+  .detalle { font-size: .75rem; color: #6d7a71; margin-top: 4px; }
+</style>
+</head>
+<body>
+<header class="cabecera">
+  <img class="logo" src="logo-unachi.png" alt="UNACHI" onerror="this.remove()">
+  <div class="titulos">
+    <span class="inst">Universidad Autónoma de Chiriquí</span>
+    <span class="sub">Clase en Vivo</span>
+  </div>
+  <div class="der"><span id="insignia" class="insignia"><span class="punto"></span><span id="insigniaTxt">Conectando</span></span></div>
+</header>
+
+<div id="escenario" class="escenario">
+  <video id="video" autoplay muted playsinline disablepictureinpicture></video>
+  <div id="capa" class="capa">
+    <div class="girador"></div>
+    <h1 id="capaTitulo">Conectando con el aula…</h1>
+    <p id="capaTexto">La imagen aparecerá automáticamente cuando el profesor comparta su pantalla. No cierre esta página.</p>
+    <div id="capaDetalle" class="detalle"></div>
+  </div>
+</div>
+
+<div class="barra">
+  <button id="btnSonido" class="btn oculto">Activar sonido</button>
+  <button id="btnAjuste" class="btn sec">Llenar pantalla</button>
+  <button id="btnCompleta" class="btn">Pantalla completa</button>
+</div>
+
+<script src="config.js"></script>
+<script>
+"use strict";
+(() => {
+  const C = window.CLASE || { puertoWebrtc: 8889, ruta: "clase" };
+  const $ = (id) => document.getElementById(id);
+  // Se usa el mismo host con el que el estudiante abrió la página.
+  const base = `http://${location.hostname}:${C.puertoWebrtc}/${C.ruta}/`;
+  const video = $("video");
+  let reader = null;
+
+  const estado = (vivo, titulo, texto, detalle = "") => {
+    $("insignia").classList.toggle("vivo", vivo);
+    $("insigniaTxt").textContent = vivo ? "EN VIVO" : "En espera";
+    $("capa").classList.toggle("oculto", vivo);
+    if (!vivo) {
+      $("capaTitulo").textContent = titulo;
+      $("capaTexto").textContent = texto;
+      $("capaDetalle").textContent = detalle;
+    }
+  };
+
+  const cargarReader = () => new Promise((ok, mal) => {
+    if (window.MediaMTXWebRTCReader) return ok();
+    const s = document.createElement("script");
+    s.src = base + "reader.js";
+    s.onload = ok;
+    s.onerror = () => { s.remove(); mal(); };
+    document.head.appendChild(s);
+  });
+
+  const conectar = async () => {
+    try { await cargarReader(); }
+    catch {
+      estado(false, "No se alcanza el servidor del aula",
+        "Verifique que está conectado a la misma red Wi-Fi que el profesor. Reintentando…");
+      return setTimeout(conectar, 3000);
+    }
+    reader = new window.MediaMTXWebRTCReader({
+      url: base + "whep",
+      onError: (err) => {
+        // 404 = el profesor todavía no transmite; el lector reintenta solo.
+        const esperando = /404|not found|closed/i.test(String(err));
+        estado(false,
+          esperando ? "Esperando al profesor…" : "Reconectando…",
+          esperando ? "La clase comenzará en cuanto el profesor comparta su pantalla. No cierre esta página."
+                    : "Se perdió la conexión con el aula; reintentando automáticamente.",
+          esperando ? "" : String(err));
+      },
+      onTrack: (evt) => {
+        if (video.srcObject !== evt.streams[0]) video.srcObject = evt.streams[0];
+        video.play().catch(() => {});
+        if (evt.track.kind === "audio") $("btnSonido").classList.remove("oculto");
+        estado(true);
+      },
+    });
+  };
+
+  // Cuando el profesor detiene o cambia la transmisión, MediaMTX cierra la sesión:
+  // el lector llama a onError (capa de espera) y reintenta cada 2 s hasta recibir una nueva pista.
+
+  $("btnSonido").onclick = () => {
+    video.muted = !video.muted;
+    video.play().catch(() => {});
+    $("btnSonido").textContent = video.muted ? "Activar sonido" : "Silenciar";
+  };
+  $("btnAjuste").onclick = () => {
+    const llenar = $("escenario").classList.toggle("llenar");
+    $("btnAjuste").textContent = llenar ? "Ajustar a pantalla" : "Llenar pantalla";
+  };
+  $("btnCompleta").onclick = () => {
+    const el = $("escenario");
+    if (document.fullscreenElement) return document.exitFullscreen();
+    if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
+    else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen(); // iPhone
+  };
+  window.addEventListener("beforeunload", () => reader?.close());
+
+  conectar();
+})();
+</script>
+</body>
+</html>

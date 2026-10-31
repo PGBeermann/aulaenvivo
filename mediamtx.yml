@@ -1,0 +1,102 @@
+###############################################################################
+# Clase en Vivo UNACHI — configuración de MediaMTX
+# Probada contra el esquema de MediaMTX v1.21.1 (versión que descarga
+# servidor_clase.py). Las claves omitidas toman su valor por defecto.
+#
+# Modelo de seguridad:
+#   - PUBLICAR (transmitir) sólo desde el propio equipo del profesor
+#     (127.0.0.1 / ::1): ningún estudiante puede suplantar la transmisión.
+#   - VER (read) permitido a cualquier equipo que alcance la red local.
+#   - API de control sólo desde localhost (el panel del profesor la consulta
+#     a través de servidor_clase.py, que actúa como intermediario).
+###############################################################################
+
+logLevel: info
+logDestinations: [stdout]
+
+readTimeout: 10s
+writeTimeout: 10s
+# Cola de salida por espectador; 512 paquetes es suficiente para 720p/1080p.
+writeQueueSize: 512
+
+###############################################################################
+# Autenticación
+authMethod: internal
+authInternalUsers:
+  # Estudiantes: sólo lectura del salón "clase".
+  - user: any
+    pass:
+    ips: []
+    permissions:
+      - action: read
+        path: clase
+
+  # Profesor: publicar y usar la API, sólo desde el mismo equipo.
+  - user: any
+    pass:
+    ips: ["127.0.0.1", "::1"]
+    permissions:
+      - action: publish
+        path: clase
+      - action: read
+        path: clase
+      - action: api
+      - action: metrics
+
+###############################################################################
+# API de control (estado de la transmisión y número de espectadores)
+api: true
+apiAddress: 127.0.0.1:9997
+
+metrics: false
+pprof: false
+playback: false
+
+###############################################################################
+# Protocolos no necesarios en el aula: se desactivan para reducir superficie
+# de ataque y puertos abiertos.
+rtsp: false
+hls: false
+srt: false
+moq: false
+
+# RTMP queda activo sólo como alternativa para OBS en modo RTMP
+# (rtmp://localhost/clase). La publicación sigue limitada a localhost.
+rtmp: true
+rtmpAddress: :1935
+
+###############################################################################
+# WebRTC — transporte principal (latencia < 1 s)
+webrtc: true
+# Señalización HTTP (WHIP/WHEP) — debe estar abierto en el firewall (TCP).
+webrtcAddress: :8889
+webrtcEncryption: false
+webrtcAllowOrigins: ["*"]
+# Medios — debe estar abierto en el firewall (UDP).
+webrtcLocalUDPAddress: :8189
+# Respaldo TCP para redes que filtran UDP entre clientes (mismo puerto, TCP).
+webrtcLocalTCPAddress: :8189
+# Anunciar las IP de las interfaces del equipo a los estudiantes.
+webrtcIPsFromInterfaces: true
+webrtcIPsFromInterfacesList: []
+webrtcIPsFromInterfacesExcludeList: []
+# servidor_clase.py no necesita esta lista; añada aquí la IP del profesor sólo
+# si el equipo tiene adaptadores virtuales (VPN, Hyper-V, VirtualBox) y los
+# estudiantes no logran conectar.  Ejemplo: ["192.168.1.50"]
+webrtcAdditionalHosts: []
+# Red local: no se requieren servidores STUN/TURN (y el aula puede no tener
+# salida a Internet).
+webrtcICEServers2: []
+webrtcHandshakeTimeout: 10s
+webrtcTrackGatherTimeout: 2s
+
+###############################################################################
+# Rutas: sólo existe el salón "clase"; cualquier otra ruta es rechazada.
+pathDefaults:
+  source: publisher
+  # Si el profesor reinicia la transmisión, la nueva sesión reemplaza a la
+  # anterior en lugar de ser rechazada.
+  overridePublisher: true
+
+paths:
+  clase:

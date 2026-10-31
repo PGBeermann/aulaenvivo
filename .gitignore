@@ -1,0 +1,8 @@
+# MediaMTX se descarga automáticamente al iniciar (servidor_clase.py)
+mediamtx/
+
+# Copia duplicada de la carpeta
+clase-en-vivo-unachi/
+
+__pycache__/
+*.pyc

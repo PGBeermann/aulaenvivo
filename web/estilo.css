@@ -1,0 +1,64 @@
+/* Clase en Vivo UNACHI — identidad visual institucional
+   Colores: conversión CMYK→RGB del Manual de Imagen Institucional UNACHI
+   (Consejo Administrativo N.° 12-2014): Pantone 364 C y Pantone 187 C. */
+:root {
+  --verde: #299100;
+  --verde-osc: #1f6e00;
+  --verde-claro: #e9f5e3;
+  --rojo: #c41237;
+  --negro: #111;
+  --gris: #5b6660;
+  --borde: #d9e2d5;
+  --fondo: #f5f7f4;
+  --tarjeta: #fff;
+  --texto: #16201a;
+  --serif: Georgia, "Times New Roman", serif;
+  --sans: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  --radio: 10px;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #0f1411; --tarjeta: #18201b; --texto: #e7eee8; --gris: #9aa79e;
+    --borde: #2b362e; --verde-claro: #1c2e18;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { font-family: var(--sans); background: var(--fondo); color: var(--texto); line-height: 1.45; }
+
+/* Encabezado institucional */
+.cabecera {
+  display: flex; align-items: center; gap: 14px;
+  background: var(--verde); color: #fff; padding: 10px 20px;
+  border-bottom: 4px solid var(--rojo);
+}
+.cabecera img.logo { height: 46px; width: auto; background: #fff; border-radius: 6px; padding: 3px; }
+.cabecera .titulos { display: flex; flex-direction: column; min-width: 0; }
+.cabecera .inst { font-family: var(--serif); font-weight: bold; font-style: italic; font-size: 1.05rem; }
+.cabecera .sub { font-size: .85rem; opacity: .9; }
+.cabecera .der { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+
+.insignia {
+  display: inline-flex; align-items: center; gap: 6px; font-size: .8rem; font-weight: 600;
+  padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,.18); color: #fff; white-space: nowrap;
+}
+.insignia .punto { width: 9px; height: 9px; border-radius: 50%; background: #bbb; }
+.insignia.vivo { background: var(--rojo); }
+.insignia.vivo .punto { background: #fff; animation: latido 1.2s infinite; }
+@keyframes latido { 50% { opacity: .25; } }
+
+/* Botones */
+.btn {
+  font: inherit; font-weight: 600; border: 0; border-radius: 8px; padding: 10px 16px; cursor: pointer;
+  background: var(--verde); color: #fff; display: inline-flex; align-items: center; gap: 8px;
+}
+.btn:hover { background: var(--verde-osc); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.btn.rojo { background: var(--rojo); }
+.btn.rojo:hover { filter: brightness(.9); }
+.btn.sec { background: transparent; color: var(--texto); border: 1px solid var(--borde); }
+.btn.sec:hover { background: var(--verde-claro); }
+.btn.grande { font-size: 1.05rem; padding: 14px 22px; }
+
+.pie { text-align: center; color: var(--gris); font-size: .78rem; padding: 14px; }
+.oculto { display: none !important; }
