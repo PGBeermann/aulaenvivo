@@ -11,7 +11,8 @@
   body { display: flex; flex-direction: column; background: #0c0f0d; }
   .cabecera { padding: 8px 14px; }
   .cabecera img.logo { height: 36px; }
-  .escenario { position: relative; flex: 1; min-height: 0; background: #000; }
+  .cuerpo { flex: 1; min-height: 0; display: flex; }
+  .escenario { position: relative; flex: 1; min-width: 0; background: #000; overflow: hidden; }
   .escenario video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; background: #000; }
   .escenario.llenar video { object-fit: cover; }
   .capa { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -20,11 +21,54 @@
   .capa p { margin: 0; color: #9fb0a4; max-width: 34em; }
   .girador { width: 44px; height: 44px; border-radius: 50%; border: 4px solid rgba(255,255,255,.15); border-top-color: var(--verde); animation: gira 1s linear infinite; }
   @keyframes gira { to { transform: rotate(360deg); } }
-  .barra { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; padding: 8px; background: #111; }
+  .detalle { font-size: .75rem; color: #6d7a71; margin-top: 4px; }
+  /* En pantallas angostas la barra muestra sólo íconos (el nombre queda en el título). */
+  @media (max-width: 700px) {
+    .barra { gap: 6px; padding: 6px; }
+    .barra .btn { padding: 9px 12px; font-size: 1.1rem; }
+    .barra .btn .txt { display: none; }
+  }
+  /* Avisos sobre el video */
+  .banda { position: absolute; left: 50%; transform: translateX(-50%); top: 10px; z-index: 7; max-width: calc(100% - 20px);
+           background: rgba(0,0,0,.72); color: #fff; padding: 7px 14px; border-radius: 99px; font-size: .88rem;
+           display: flex; align-items: center; gap: 8px; backdrop-filter: blur(4px); }
+  .banda button { font: inherit; font-size: .8rem; border: 0; border-radius: 99px; padding: 4px 10px; cursor: pointer; background: var(--verde); color: #fff; }
+  /* Barra inferior */
+  .barra { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; padding: 8px; background: #111; position: relative; }
   .barra .btn { padding: 8px 14px; font-size: .9rem; }
   .barra .btn.sec { color: #e7eee8; border-color: #333; }
   .barra .btn.sec:hover { background: #1c2e18; }
-  .detalle { font-size: .75rem; color: #6d7a71; margin-top: 4px; }
+  .barra .btn.activo { background: #f5c400; color: #111; border-color: #f5c400; }
+  .barra .btn.hablando { background: var(--rojo); }
+  .expresiones { position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); z-index: 20;
+                 display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; padding: 8px; border-radius: 12px;
+                 background: #1b221d; border: 1px solid #333; box-shadow: 0 8px 30px rgba(0,0,0,.5); }
+  .expresiones button { border: 0; background: transparent; color: #dfe7e1; cursor: pointer; border-radius: 8px; padding: 6px 4px;
+                        display: flex; flex-direction: column; align-items: center; font: inherit; font-size: .68rem; width: 76px; }
+  .expresiones button span { font-size: 1.7rem; line-height: 1.2; }
+  .expresiones button:hover { background: #2a372d; }
+  /* Chat lateral */
+  .lateral { width: 340px; flex-shrink: 0; display: flex; flex-direction: column; background: var(--tarjeta); color: var(--texto);
+             border-left: 1px solid #222; min-height: 0; }
+  .lateral .cab { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid var(--borde); font-weight: 700; }
+  .lateral .cab button { margin-left: auto; border: 0; background: transparent; color: var(--gris); font-size: 1.2rem; cursor: pointer; }
+  .lateral .chat-lista { flex: 1; padding: 10px; }
+  .lateral form { padding: 8px 10px 10px; margin: 0; }
+  .lateral .pie-chat { font-size: .74rem; color: var(--gris); padding: 0 12px 8px; }
+  .lateral .pie-chat a { color: inherit; cursor: pointer; text-decoration: underline; }
+  @media (max-width: 899px) {
+    .lateral { position: fixed; inset: 0 0 0 auto; width: min(380px, 100vw); z-index: 30; box-shadow: -10px 0 40px rgba(0,0,0,.5); }
+  }
+  /* Ventana del nombre y del turno de palabra */
+  .modal { position: fixed; inset: 0; z-index: 40; background: rgba(0,0,0,.6); display: grid; place-items: center; padding: 16px; }
+  .modal .caja { background: var(--tarjeta); color: var(--texto); border-radius: 14px; padding: 22px; width: min(400px, 100%); box-shadow: 0 20px 60px rgba(0,0,0,.4); }
+  .modal h2 { font-family: var(--serif); color: var(--verde); margin: 0 0 8px; font-size: 1.3rem; }
+  @media (prefers-color-scheme: dark) { .modal h2 { color: #6fcf4a; } }
+  .modal p { color: var(--gris); margin: 0 0 14px; font-size: .92rem; }
+  .modal input { width: 100%; font: inherit; padding: 10px 12px; border-radius: 8px; border: 1px solid var(--borde); background: var(--tarjeta); color: var(--texto); }
+  .modal .acciones { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; flex-wrap: wrap; }
+  .hablando-caja { display: flex; align-items: center; gap: 10px; }
+  .error-palabra { color: var(--rojo); font-weight: 600; font-size: .88rem; margin-top: 10px; }
 </style>
 </head>
 <body>
@@ -32,38 +76,91 @@
   <img class="logo" src="logo-unachi.png" alt="UNACHI" onerror="this.remove()">
   <div class="titulos">
     <span class="inst">Universidad Autónoma de Chiriquí</span>
-    <span class="sub">Clase en Vivo</span>
+    <span class="sub">Clase en Vivo<span id="saludo"></span></span>
   </div>
-  <div class="der"><span id="insignia" class="insignia"><span class="punto"></span><span id="insigniaTxt">Conectando</span></span></div>
+  <div class="der">
+    <span id="insigniaGrab" class="insignia grab oculto" title="El profesor está grabando la clase"><span class="punto"></span>GRABANDO</span>
+    <span id="insignia" class="insignia"><span class="punto"></span><span id="insigniaTxt">Conectando</span></span>
+  </div>
 </header>
 
-<div id="escenario" class="escenario">
-  <video id="video" autoplay muted playsinline disablepictureinpicture></video>
-  <div id="capa" class="capa">
-    <div class="girador"></div>
-    <h1 id="capaTitulo">Conectando con el aula…</h1>
-    <p id="capaTexto">La imagen aparecerá automáticamente cuando el profesor comparta su pantalla. No cierre esta página.</p>
-    <div id="capaDetalle" class="detalle"></div>
+<div class="cuerpo">
+  <div id="escenario" class="escenario">
+    <video id="video" autoplay muted playsinline disablepictureinpicture></video>
+    <div id="capa" class="capa">
+      <div class="girador"></div>
+      <h1 id="capaTitulo">Conectando con el aula…</h1>
+      <p id="capaTexto">La imagen aparecerá automáticamente cuando el profesor comparta su pantalla. No cierre esta página.</p>
+      <div id="capaDetalle" class="detalle"></div>
+    </div>
+    <div id="bandaHablante" class="banda oculto">🎤 <b id="nombreHablante"></b> tiene la palabra
+      <button id="btnOirHablante" class="oculto">🔊 Activar sonido</button></div>
   </div>
+
+  <aside id="lateral" class="lateral oculto" aria-label="Chat de la clase">
+    <div class="cab">💬 Chat de la clase <button id="btnCerrarChat" title="Cerrar">✕</button></div>
+    <div id="chatLista" class="chat-lista" aria-live="polite"></div>
+    <form id="chatForm" class="chat-form">
+      <input id="chatTexto" maxlength="500" placeholder="Escribir un mensaje…" autocomplete="off">
+      <button class="btn">Enviar</button>
+    </form>
+    <div class="pie-chat"><span id="chatEstado"></span> Participa como <b id="miNombre"></b> · <a id="lnkNombre">cambiar</a></div>
+  </aside>
 </div>
 
 <div class="barra">
-  <button id="btnSonido" class="btn oculto">Activar sonido</button>
-  <button id="btnAjuste" class="btn sec">Llenar pantalla</button>
-  <button id="btnCompleta" class="btn">Pantalla completa</button>
+  <button id="btnSonido" class="btn oculto"></button>
+  <button id="btnMano" class="btn sec"></button>
+  <button id="btnPalabra" class="btn sec"></button>
+  <button id="btnExpr" class="btn sec" aria-expanded="false">😀<span class="txt"> Expresiones</span></button>
+  <button id="btnChat" class="btn sec" title="Chat de la clase">💬<span class="txt"> Chat</span> <span id="nuevos" class="contador" data-n="0"></span></button>
+  <button id="btnAjuste" class="btn sec"></button>
+  <button id="btnCompleta" class="btn" title="Pantalla completa">⛶<span class="txt"> Pantalla completa</span></button>
+  <div id="expresiones" class="expresiones oculto" role="menu"></div>
+</div>
+
+<!-- Nombre del estudiante -->
+<div id="modalNombre" class="modal oculto">
+  <form class="caja" id="formNombre">
+    <h2>¿Cómo se llama?</h2>
+    <p>Su nombre aparecerá en el chat y cuando levante la mano o pida la palabra.</p>
+    <input id="inNombre" maxlength="40" required autocomplete="name" placeholder="Nombre y apellido">
+    <div class="acciones"><button class="btn">Entrar a la clase</button></div>
+  </form>
+</div>
+
+<!-- Turno de palabra -->
+<div id="modalPalabra" class="modal oculto">
+  <div class="caja">
+    <h2 id="palabraTitulo">El profesor le dio la palabra</h2>
+    <p id="palabraTexto">Active su micrófono para que toda la clase lo escuche. Mientras hable, el sonido de la clase se silencia en este equipo para evitar eco.</p>
+    <div id="hablandoCaja" class="hablando-caja oculto">🔴 <b>Hablando</b><div class="nivel"><i id="miNivel"></i></div></div>
+    <div id="errorPalabra" class="error-palabra oculto"></div>
+    <div class="acciones">
+      <button id="btnRechazar" class="btn sec">No, gracias</button>
+      <button id="btnHablar" class="btn">🎤 Activar micrófono</button>
+      <button id="btnTerminar" class="btn rojo oculto">Terminar de hablar</button>
+    </div>
+  </div>
 </div>
 
 <script src="config.js"></script>
+<script src="comun.js"></script>
 <script>
 "use strict";
 (() => {
   const C = window.CLASE || { online: true, ruta: "clase" };
+  const A = window.Aula;
   const $ = (id) => document.getElementById(id);
   // WHEP pasa por el mismo servidor (y dominio) con que se abrió la página.
   const base = `${location.origin}/${C.ruta}/`;
+  const baseVoz = `${location.origin}/voz/`;
   const video = $("video");
   let reader = null;
 
+  // =================================================================
+  // Video de la clase
+  // =================================================================
   const estado = (vivo, titulo, texto, detalle = "") => {
     $("insignia").classList.toggle("vivo", vivo);
     $("insigniaTxt").textContent = vivo ? "EN VIVO" : "En espera";
@@ -96,7 +193,7 @@
       url: base + "whep",
       onError: (err) => {
         // 401 = venció el código de acceso: volver a pedirlo.
-        if (/401/.test(String(err))) { reader?.close(); location.href = "/acceso.html?rol=estudiante"; return; }
+        if (/401/.test(String(err))) { reader?.close(); location.href = "/acceso.html?rol=estudiante"; return; }
         // 404 = el profesor todavía no transmite; el lector reintenta solo.
         const esperando = /404|not found|closed/i.test(String(err));
         estado(false,
@@ -108,23 +205,33 @@
       onTrack: (evt) => {
         if (video.srcObject !== evt.streams[0]) video.srcObject = evt.streams[0];
         video.play().catch(() => {});
-        if (evt.track.kind === "audio") $("btnSonido").classList.remove("oculto");
+        if (evt.track.kind === "audio") pintarSonido();
         estado(true);
       },
     });
   };
 
-  // Cuando el profesor detiene o cambia la transmisión, MediaMTX cierra la sesión:
-  // el lector llama a onError (capa de espera) y reintenta cada 2 s hasta recibir una nueva pista.
-
-  $("btnSonido").onclick = () => {
-    video.muted = !video.muted;
-    video.play().catch(() => {});
-    $("btnSonido").textContent = video.muted ? "Activar sonido" : "Silenciar";
+  // Sonido: el navegador exige un toque del usuario para reproducir audio.
+  let quiereSonido = false;      // lo que eligió el estudiante
+  let silenciadoPorHablar = false;
+  const aplicarSonido = () => {
+    video.muted = !quiereSonido || silenciadoPorHablar;
+    if (!video.muted) video.play().catch(() => {});
+    pintarSonido();
   };
+  // Botón con ícono + texto (el texto se oculta en pantallas angostas).
+  const rotular = (b, icono, texto) => { b.innerHTML = `${icono}<span class="txt"> ${A.esc(texto)}</span>`; b.title = texto; };
+  rotular($("btnAjuste"), "⤢", "Llenar pantalla");
+  const pintarSonido = () => {
+    $("btnSonido").classList.remove("oculto");
+    rotular($("btnSonido"), quiereSonido ? "🔇" : "🔊", quiereSonido ? "Silenciar" : "Activar sonido");
+    $("btnOirHablante").classList.toggle("oculto", quiereSonido);
+  };
+  $("btnSonido").onclick = () => { quiereSonido = !quiereSonido; aplicarSonido(); };
+  $("btnOirHablante").onclick = () => { quiereSonido = true; aplicarSonido(); };
   $("btnAjuste").onclick = () => {
     const llenar = $("escenario").classList.toggle("llenar");
-    $("btnAjuste").textContent = llenar ? "Ajustar a pantalla" : "Llenar pantalla";
+    rotular($("btnAjuste"), "⤢", llenar ? "Ajustar a pantalla" : "Llenar pantalla");
   };
   $("btnCompleta").onclick = () => {
     const el = $("escenario");
@@ -132,9 +239,302 @@
     if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
     else if (video.webkitEnterFullscreen) video.webkitEnterFullscreen(); // iPhone
   };
-  window.addEventListener("beforeunload", () => reader?.close());
 
+  // =================================================================
+  // Identidad (nombre) y conexión de eventos
+  // =================================================================
+  const guardado = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+  const guardar = (k, v) => { try { localStorage.setItem(k, v); } catch { /* modo privado */ } };
+  let miId = guardado("clase:id");
+  if (!/^[A-Za-z0-9_-]{8,64}$/.test(miId || "")) {
+    miId = (crypto.randomUUID ? crypto.randomUUID() : String(Math.random()).slice(2) + Date.now()).replace(/[^A-Za-z0-9-]/g, "");
+    guardar("clase:id", miId);
+  }
+  let miNombre = guardado("clase:nombre") || "";
+  let sala = null;
+
+  const pedirNombre = () => new Promise((listo) => {
+    $("inNombre").value = miNombre;
+    $("modalNombre").classList.remove("oculto");
+    setTimeout(() => $("inNombre").focus(), 50);
+    $("formNombre").onsubmit = (e) => {
+      e.preventDefault();
+      const n = $("inNombre").value.replace(/\s+/g, " ").trim();
+      if (!n) return;
+      miNombre = n.slice(0, 40);
+      guardar("clase:nombre", miNombre);
+      $("modalNombre").classList.add("oculto");
+      listo();
+    };
+  });
+
+  const conectarSala = () => {
+    sala?.cerrar();
+    $("miNombre").textContent = miNombre;
+    $("saludo").textContent = " · " + miNombre;
+    sala = A.eventos(`/eventos?id=${encodeURIComponent(miId)}&n=${encodeURIComponent(miNombre)}`, manejar,
+      (ok) => { $("chatEstado").textContent = ok ? "" : "Reconectando…"; });
+  };
+  $("lnkNombre").onclick = async () => { await pedirNombre(); conectarSala(); };
+
+  const enviar = async (datos) => {
+    const r = await A.accion({ id: miId, ...datos });
+    if (!r.ok) aviso(r.error);
+    return r.ok;
+  };
+
+  // =================================================================
+  // Chat
+  // =================================================================
+  let chatAbierto = false, nuevos = 0, chatActivo = true;
+  const abrirChat = (abrir) => {
+    chatAbierto = abrir;
+    $("lateral").classList.toggle("oculto", !abrir);
+    guardar("clase:chat", abrir ? "1" : "0");
+    if (abrir) { nuevos = 0; pintarNuevos(); $("chatLista").scrollTop = $("chatLista").scrollHeight; }
+  };
+  const pintarNuevos = () => { $("nuevos").textContent = nuevos || ""; $("nuevos").dataset.n = nuevos; };
+  $("btnChat").onclick = () => abrirChat(!chatAbierto);
+  $("btnCerrarChat").onclick = () => abrirChat(false);
+
+  const pintarMensaje = (m, contar = true) => {
+    const div = document.createElement("div");
+    div.className = `chat-msg ${m.rol}${m.de === miId ? " propio" : ""}${m.borrado ? " borrado" : ""}`;
+    div.dataset.id = m.id;
+    if (m.rol === "sistema") div.textContent = m.texto;
+    else div.innerHTML = `<div class="quien">${A.esc(m.rol === "prof" ? "👨‍🏫 Profesor" : (m.de === miId ? "Usted" : m.nombre))}<time>${A.hora(m.t)}</time></div>
+      <div class="texto">${m.borrado ? "Mensaje eliminado por el profesor" : A.esc(m.texto)}</div>`;
+    const lista = $("chatLista");
+    const abajo = lista.scrollHeight - lista.scrollTop - lista.clientHeight < 60;
+    lista.appendChild(div);
+    while (lista.children.length > 300) lista.firstChild.remove();
+    if (abajo || m.de === miId) lista.scrollTop = lista.scrollHeight;
+    if (contar && !chatAbierto && m.de !== miId) { nuevos++; pintarNuevos(); }
+  };
+  const pintarChatActivo = () => {
+    $("chatTexto").disabled = !chatActivo;
+    $("chatTexto").placeholder = chatActivo ? "Escribir un mensaje…" : "El profesor cerró el chat por ahora";
+  };
+  $("chatForm").onsubmit = async (e) => {
+    e.preventDefault();
+    const texto = $("chatTexto").value.trim();
+    if (!texto) return;
+    $("chatTexto").value = "";
+    if (!(await enviar({ tipo: "chat", texto }))) $("chatTexto").value = texto;
+  };
+
+  // Aviso breve sobre el video
+  let relojAviso = null;
+  const aviso = (texto) => {
+    let b = $("avisoBreve");
+    if (!b) {
+      b = Object.assign(document.createElement("div"), { id: "avisoBreve", className: "banda" });
+      b.style.top = "auto"; b.style.bottom = "14px";
+      $("escenario").appendChild(b);
+    }
+    b.textContent = texto;
+    b.classList.remove("oculto");
+    clearTimeout(relojAviso);
+    relojAviso = setTimeout(() => b.classList.add("oculto"), 4500);
+  };
+
+  // =================================================================
+  // Mano, pedir la palabra y expresiones
+  // =================================================================
+  let mano = false, pide = false;
+  const pintarMano = () => {
+    $("btnMano").classList.toggle("activo", mano);
+    rotular($("btnMano"), "✋", mano ? "Bajar la mano" : "Levantar la mano");
+    $("btnPalabra").classList.toggle("activo", pide);
+    if (!hablando) rotular($("btnPalabra"), "🎤", pide ? "Cancelar pedido de palabra" : "Pedir la palabra");
+  };
+  $("btnMano").onclick = () => enviar({ tipo: "mano", on: !mano });
+  $("btnPalabra").onclick = () => {
+    if (hablando || token) return abrirTurno();
+    enviar({ tipo: "palabra", on: !pide });
+  };
+
+  $("expresiones").innerHTML = A.EXPRESIONES.map(([e, t]) =>
+    `<button data-e="${e}" role="menuitem" title="${A.esc(t)}"><span>${e}</span>${A.esc(t)}</button>`).join("");
+  const menuExpr = (abrir) => {
+    $("expresiones").classList.toggle("oculto", !abrir);
+    $("btnExpr").setAttribute("aria-expanded", String(abrir));
+  };
+  $("btnExpr").title = "Enviar una expresión";
+  $("btnExpr").onclick = (e) => { e.stopPropagation(); menuExpr($("expresiones").classList.contains("oculto")); };
+  $("expresiones").onclick = (e) => {
+    const b = e.target.closest("button[data-e]");
+    if (!b) return;
+    menuExpr(false);
+    enviar({ tipo: "reaccion", emoji: b.dataset.e });
+  };
+  document.addEventListener("click", (e) => { if (!e.target.closest("#expresiones")) menuExpr(false); });
+
+  // =================================================================
+  // Turno de palabra: micrófono del estudiante por WHIP (/voz/whip)
+  // =================================================================
+  let token = null, hablando = false, pc = null, mic = null, sesionVoz = null, pararMedidor = null, acMic = null;
+
+  const abrirTurno = () => {
+    $("modalPalabra").classList.remove("oculto");
+    const seguro = !!(window.isSecureContext && navigator.mediaDevices?.getUserMedia);
+    $("btnHablar").classList.toggle("oculto", hablando || !seguro);
+    $("btnTerminar").classList.toggle("oculto", !hablando);
+    $("btnRechazar").classList.toggle("oculto", hablando);
+    $("hablandoCaja").classList.toggle("oculto", !hablando);
+    // En el modo de aula (http) el navegador no permite usar el micrófono:
+    // el estudiante habla en voz alta en el salón.
+    $("btnRechazar").textContent = seguro ? "No, gracias" : "Listo, terminé";
+    $("palabraTexto").textContent = !seguro
+      ? "Hable en voz alta en el aula. (El micrófono del navegador sólo funciona cuando la clase se transmite por HTTPS.)"
+      : hablando ? "Toda la clase lo está escuchando. Pulse «Terminar de hablar» cuando acabe."
+                 : "Active su micrófono para que toda la clase lo escuche. Mientras hable, el sonido de la clase se silencia en este equipo para evitar eco.";
+  };
+  const cerrarTurno = () => {
+    $("modalPalabra").classList.add("oculto");
+    $("errorPalabra").classList.add("oculto");
+  };
+
+  const esperarIce = (conexion) => new Promise((listo) => {
+    if (conexion.iceGatheringState === "complete") return listo();
+    const fin = () => { conexion.removeEventListener("icegatheringstatechange", rev); listo(); };
+    const rev = () => { if (conexion.iceGatheringState === "complete") fin(); };
+    conexion.addEventListener("icegatheringstatechange", rev);
+    setTimeout(fin, 2500);
+  });
+
+  const hablar = async () => {
+    $("errorPalabra").classList.add("oculto");
+    $("btnHablar").disabled = true;
+    try {
+      mic = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } });
+      pc = new RTCPeerConnection();
+      pc.addTransceiver(mic.getAudioTracks()[0], { direction: "sendonly" });
+      await pc.setLocalDescription(await pc.createOffer());
+      await esperarIce(pc);
+      const r = await fetch(baseVoz + "whip", {
+        method: "POST",
+        headers: { "Content-Type": "application/sdp", "X-Voz-Token": token },
+        body: pc.localDescription.sdp,
+      });
+      if (r.status !== 201) throw new Error(r.status === 401 ? "El turno ya no está vigente." : `El servidor respondió ${r.status}.`);
+      sesionVoz = r.headers.get("Location");
+      await pc.setRemoteDescription({ type: "answer", sdp: await r.text() });
+      pc.onconnectionstatechange = () => {
+        if (pc && pc.connectionState === "failed") {
+          mostrarError("Se perdió la conexión del micrófono. Pulse «Activar micrófono» para reintentar.");
+          detenerMic();
+          abrirTurno();
+        }
+      };
+      hablando = true;
+      silenciadoPorHablar = true; aplicarSonido();   // evita oírse con retraso (eco)
+      acMic = new AudioContext();
+      pararMedidor = A.medidor(acMic, acMic.createMediaStreamSource(mic), (v) => ($("miNivel").style.width = `${Math.round(v * 100)}%`));
+      $("btnPalabra").classList.add("hablando");
+      rotular($("btnPalabra"), "🔴", "Hablando…");
+      abrirTurno();
+    } catch (e) {
+      detenerMic();
+      mostrarError(e.name === "NotAllowedError" ? "No se permitió usar el micrófono. Revise el permiso del navegador (ícono del candado)."
+                                                : "No se pudo activar el micrófono: " + e.message);
+    } finally {
+      $("btnHablar").disabled = false;
+    }
+  };
+  const mostrarError = (t) => { $("errorPalabra").textContent = t; $("errorPalabra").classList.remove("oculto"); };
+
+  // avisarServidor=false cuando el propio servidor ya cerró la sesión (turno retirado).
+  const detenerMic = (avisarServidor = true) => {
+    if (sesionVoz && avisarServidor) {
+      fetch(new URL(sesionVoz, location.href).href, { method: "DELETE", headers: { "X-Voz-Token": token || "" } }).catch(() => {});
+      sesionVoz = null;
+    }
+    sesionVoz = null;
+    pc?.close(); pc = null;
+    mic?.getTracks().forEach((t) => t.stop()); mic = null;
+    pararMedidor?.(); pararMedidor = null;
+    acMic?.close().catch(() => {}); acMic = null;
+    hablando = false;
+    silenciadoPorHablar = false; aplicarSonido();
+    $("btnPalabra").classList.remove("hablando");
+    pintarMano();
+  };
+  const finTurno = (avisarServidor = true) => { detenerMic(avisarServidor); token = null; cerrarTurno(); };
+
+  $("btnHablar").onclick = hablar;
+  // «soltar» hace que el servidor cierre la sesión del micrófono en MediaMTX.
+  $("btnTerminar").onclick = () => { enviar({ tipo: "soltar" }); finTurno(false); };
+  $("btnRechazar").onclick = () => { enviar({ tipo: "soltar" }); finTurno(false); };
+
+  // =================================================================
+  // Eventos del servidor
+  // =================================================================
+  let hablante = null;
+  const pintarHablante = () => {
+    const otro = hablante && hablante.id !== miId;
+    $("bandaHablante").classList.toggle("oculto", !otro);
+    if (otro) $("nombreHablante").textContent = hablante.nombre;
+    pintarSonido();
+  };
+  const manejar = (ev) => {
+    switch (ev.tipo) {
+      case "estado":
+        $("chatLista").innerHTML = "";
+        ev.mensajes.forEach((m) => pintarMensaje(m, false));
+        chatActivo = ev.chatActivo; pintarChatActivo();
+        mano = ev.yo.mano; pide = ev.yo.pide; pintarMano();
+        hablante = ev.hablante; pintarHablante();
+        $("insigniaGrab").classList.toggle("oculto", !ev.grabando);
+        if (ev.tuPalabra && !token) { token = ev.tuPalabra; abrirTurno(); }
+        else if (!ev.tuPalabra && token) finTurno();
+        break;
+      case "msg": pintarMensaje(ev.m); break;
+      case "borrado": {
+        const d = $("chatLista").querySelector(`[data-id="${ev.id}"]`);
+        if (d) { d.classList.add("borrado"); d.querySelector(".texto").textContent = "Mensaje eliminado por el profesor"; }
+        break;
+      }
+      case "chatActivo": chatActivo = ev.on; pintarChatActivo(); break;
+      case "yo":
+        if ("mano" in ev) mano = ev.mano;
+        if ("pide" in ev) pide = ev.pide;
+        pintarMano();
+        break;
+      case "reaccion": A.flotar($("escenario"), ev.emoji, ev.nombre); break;
+      case "hablante": hablante = ev.h; pintarHablante(); break;
+      case "grabando":
+        $("insigniaGrab").classList.toggle("oculto", !ev.on);
+        aviso(ev.on ? "🔴 El profesor comenzó a grabar la clase." : "La grabación terminó.");
+        break;
+      case "tuPalabra":
+        token = ev.token;
+        $("palabraTitulo").textContent = "El profesor le dio la palabra";
+        abrirTurno();
+        try { navigator.vibrate?.(200); } catch { /* ignorar */ }
+        break;
+      case "reconectar":   // el profesor cambió de ventana: conectarse ya a la nueva sesión
+        try { reader?.close(); } catch { /* ignorar */ }
+        reader = null;
+        setTimeout(conectar, 300);
+        break;
+      case "finPalabra":
+        if (ev.motivo === "profesor" && (hablando || token)) aviso("El profesor cerró su turno de palabra.");
+        finTurno(false);
+        break;
+    }
+  };
+
+  window.addEventListener("beforeunload", () => { reader?.close(); if (hablando) detenerMic(); });
+
+  // =================================================================
+  // Inicio
+  // =================================================================
+  pintarMano();
+  abrirChat(guardado("clase:chat") === "1" || (guardado("clase:chat") === null && innerWidth >= 900));
   conectar();
+  (miNombre ? Promise.resolve() : pedirNombre()).then(conectarSala);
 })();
 </script>
 </body>

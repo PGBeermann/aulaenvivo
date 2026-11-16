@@ -40,7 +40,7 @@ https://clase.quimicaeduc.org/profesor ─► Traefik :443 (HTTPS) ─► conten
 
 1. Abren `https://clase.quimicaeduc.org` y escriben el código que les dio el profesor. El código no distingue mayúsculas de minúsculas.
 2. Si el profesor todavía no transmite, ven «Esperando al profesor…». La imagen aparece sola cuando empieza la clase.
-3. Tienen botones de **Pantalla completa**, **Llenar pantalla** y **Activar sonido**.
+3. Tienen botones de **Pantalla completa**, **Llenar pantalla** y **Activar sonido**, además de chat, expresiones, mano levantada y **Pedir la palabra** (ver «Participación de los estudiantes»).
 
 **Perfiles de calidad**
 
@@ -54,6 +54,42 @@ https://clase.quimicaeduc.org/profesor ─► Traefik :443 (HTTPS) ─► conten
 El VPS envía una copia del video a cada estudiante. Con 30 estudiantes en el perfil *Equilibrado* salen unos 45 Mbps, es decir, unos 20 GB por hora de clase.
 
 **OBS Studio (opcional):** en *Ajustes → Emisión*, elija el servicio **WHIP**, con el servidor `https://clase.quimicaeduc.org/clase/whip`. En *Bearer Token* escriba la contraseña del profesor.
+
+## Participación de los estudiantes
+
+La primera vez, cada estudiante escribe su nombre; el navegador lo recuerda y se puede cambiar desde el chat.
+
+| Función | Estudiante | Profesor (recuadro **Participación**) |
+|---|---|---|
+| **Chat** | Botón 💬. En la computadora queda abierto a la derecha; en el celular es un panel deslizable | Lee y escribe a toda la clase, **elimina mensajes**, cierra o abre el chat y lo **descarga** en `.txt` |
+| **Expresiones** | Botón 😀: 👍 De acuerdo · 👏 Aplausos · 😂 Risa · 😮 Sorpresa · ❤️ Me gusta · 🤔 Tengo una duda · 🐢 Más despacio · 🔁 ¿Puede repetir? | Aparecen flotando sobre la vista previa, con el nombre de quien las envía |
+| **Mano levantada** ✋ | Levanta o baja la mano | Lista por orden de llegada, con **Bajar** y **Bajar todas** |
+| **Pedir la palabra** 🎤 | Pide o cancela el turno | Lista por orden de llegada, con **Dar la palabra** y ✕ para descartar |
+| **Hablar** | Al recibir la palabra pulsa **Activar micrófono**; mientras habla, el sonido de la clase se silencia en su equipo para evitar eco. Termina con **Terminar de hablar** | Ve quién habla, el tiempo y el nivel de su micrófono. **Quitar la palabra** corta el micrófono en el servidor aunque el navegador del estudiante no responda |
+
+- **Cómo llega la voz a todos:** el micrófono del estudiante llega al panel del profesor, que lo **mezcla con el audio de la clase**. Así lo escucha todo el grupo y queda en la grabación.
+- **Un turno a la vez:** si da la palabra a otro estudiante, el turno anterior se cierra. Si el estudiante cierra la página, el turno se libera en unos 10 s.
+- **Micrófono y HTTPS:** el estudiante solo puede usar el micrófono con HTTPS, es decir, en la versión del VPS. En la versión local del aula (`http://IP:8080`) recibe el turno, pero habla en voz alta en el salón.
+- **Use audífonos** mientras un estudiante habla; si lo escucha por parlantes, su micrófono lo recoge y se produce eco. Con la casilla **Escuchar aquí** puede dejar de oírlo en su equipo, y los estudiantes lo siguen escuchando.
+- **Sonido de los estudiantes:** cada estudiante debe pulsar **Activar sonido** una vez para oír la clase. Cuando alguien tiene la palabra, el video muestra un aviso con ese botón.
+- **Mientras comparte otra ventana:**
+  - **⧉ Ventana flotante** (Chrome o Edge 116+) mantiene el chat y las manos siempre visibles. Si comparte la **pantalla completa**, los estudiantes también la verán; comparta solo la ventana de la presentación.
+  - Suena un aviso al recibir una mano, un pedido de palabra o un mensaje. Opcionalmente, puede activar las notificaciones del escritorio.
+
+## Grabación de la clase
+
+Recuadro **Grabación** del panel → **● Iniciar grabación**.
+
+- **Qué se graba:** lo mismo que reciben los estudiantes: la pantalla, el audio del profesor y la voz de quien tenga la palabra. El chat se descarga aparte en `.txt`.
+- **Dónde se graba:** en el servidor, de modo que si el panel se cierra, la grabación sigue. Se activa y se detiene en caliente, sin cortar la transmisión.
+- **Formato:** MP4, video H.264 y audio Opus. Se reproduce en VLC, Chrome, Edge y Firefox. Para un reproductor que no admita Opus: `ffmpeg -i clase.mp4 -c:v copy -c:a aac clase_aac.mp4`.
+- **Aviso a los estudiantes:** ven la insignia **● GRABANDO** y un mensaje en el chat. Conviene informar al grupo antes de grabar.
+- **Archivos:**
+  - El panel los lista con **Descargar** y **🗑 Eliminar**. «Cambiar ventana» inicia un archivo nuevo.
+  - En el VPS se borran solos a los 30 días. En la versión local quedan en la carpeta `grabaciones/clase/` y no se borran.
+  - En Dokploy hace falta un **volumen** en `/app/grabaciones` para que sobrevivan a cada despliegue (paso 7 de [DESPLIEGUE_DOKPLOY.md](DESPLIEGUE_DOKPLOY.md)).
+- **Códec:** VP8 no se puede grabar. Use H.264 (predeterminado), VP9 o AV1; con VP8, el panel avisa.
+- **Espacio en disco:** 1 h en el perfil *Equilibrado* ocupa unos 0,7 GB, y en *Texto nítido* unos 1,1 GB.
 
 ## Despliegue en Dokploy
 
@@ -106,9 +142,11 @@ Luego abra `http://localhost:8080/profesor`.
 - **Contraseñas por fuerza bruta:** tras 8 intentos fallidos seguidos, esa conexión queda bloqueada 5 minutos.
 - **Superficie mínima:**
   - La señalización y la API de MediaMTX solo escuchan en `127.0.0.1` dentro del contenedor.
-  - Solo existe la ruta `clase` y no se listan carpetas.
+  - Solo existen las rutas `clase` (transmisión) y `voz` (micrófono del estudiante con la palabra), y no se listan carpetas.
+  - Para publicar en `voz` se exige el **token del turno vigente**, y solo el profesor puede escucharla directamente. Al quitar la palabra, el token deja de valer y la sesión se cierra en MediaMTX.
   - RTSP, HLS, SRT, MoQ y RTMP están desactivados.
 - **Cifrado:** HTTPS para las páginas y la señalización. El video WebRTC va siempre cifrado (DTLS‑SRTP).
+- **Chat y acciones:** solo se aceptan peticiones JSON del mismo origen, con límites de frecuencia (5 mensajes cada 10 s por estudiante). El texto se muestra siempre escapado, nunca como HTML. La moderación, el turno de palabra, la grabación y la descarga de grabaciones o del chat son exclusivas del profesor.
 - **Contenedor** sin privilegios: usuario `clase`, UID 10001. Tiene un *healthcheck* en `/salud`.
 
 ## Estructura del repositorio
@@ -118,8 +156,10 @@ Luego abra `http://localhost:8080/profesor`.
 | `Dockerfile` | Imagen de la versión VPS: Python 3.12 slim + MediaMTX v1.21.1 |
 | `servidor_clase.py` | Servidor del aula: páginas, control de acceso, proxy WHIP/WHEP y arranque de MediaMTX |
 | `mediamtx.yml` | Configuración endurecida de MediaMTX. En el VPS se ajusta con variables `MTX_*` |
-| `web/index.html` | Página del estudiante |
-| `web/profesor.html` | Panel del profesor |
+| `web/index.html` | Página del estudiante: video, chat, expresiones, mano, pedir la palabra y hablar |
+| `web/profesor.html` | Panel del profesor: transmisión, participación y grabación |
+| `web/profesor-sala.js` | Chat, manos, turno de palabra, mezcla de audio, ventana flotante y grabaciones (profesor) |
+| `web/comun.js` | Funciones compartidas (eventos en vivo, chat y expresiones) |
 | `web/acceso.html` | Pantalla de contraseña del profesor y código de estudiantes |
 | `web/estilo.css` | Identidad visual UNACHI: verde Pantone 364 C y rojo Pantone 187 C |
 | `DESPLIEGUE_DOKPLOY.md` | Guía detallada de despliegue en Hostinger + Dokploy |
@@ -137,8 +177,27 @@ El mismo código sirve para las dos versiones. Con `--online`, o con `MODO=onlin
 | Los estudiantes no ven video aunque el profesor transmite | El puerto 8189 UDP/TCP (firewall de Hostinger y **Ports** en Dokploy) y que `IP_PUBLICA` sea la IP real del VPS |
 | `/salud` no responde | En **Logs** de Dokploy, lo más común es que falte `PROFESOR_CLAVE` o que tenga menos de 8 caracteres |
 | «Demasiados intentos» | Espere 5 minutos |
+| No aparecen el chat ni los botones nuevos | `https://clase.quimicaeduc.org/version` debe responder `"version": "2.0.0"` o superior. Si no responde, el contenedor sigue con la versión anterior: pulse **Deploy** en Dokploy |
+| El estudiante no puede activar el micrófono | Debe permitir el micrófono en el ícono del candado del navegador |
+| Se oye eco cuando habla un estudiante | Use audífonos o desmarque **Escuchar aquí** |
+| La grabación quedó sin imagen | La transmisión usaba VP8. Elija H.264 |
+| Las grabaciones desaparecen tras un despliegue | Falta el volumen en `/app/grabaciones` |
 
 Mantenga **una sola réplica** de la aplicación: el estado de la transmisión vive dentro del contenedor.
+
+## Pruebas de participación y grabación (16‑nov‑2026)
+
+Con MediaMTX v1.21.1 y Chromium automatizado (Playwright), se probó un profesor con dos o tres estudiantes, en modo online (contraseña y código de acceso) y local. Se usó un micrófono simulado con un tono de prueba.
+
+- **Chat:** los mensajes llegan a todos y el HTML se muestra como texto.
+- **Expresiones, manos y pedidos de palabra:** llegan al profesor en tiempo real.
+- **Voz del estudiante:**
+  - Otro estudiante la recibe dentro de la transmisión: el nivel medido pasa de 0 a 128 mientras habla y vuelve a 0 al quitarle la palabra.
+  - Queda en la grabación: −91 dB antes del turno y 0 dB durante él.
+- **Turnos:** el relevo entre estudiantes funciona, y una página cerrada libera el turno.
+- **Grabaciones:** el profesor las descarga; un estudiante recibe `401`.
+- **Rutas nuevas sin sesión** (eventos, acciones, voz sin token): responden `401`.
+- **Cambiar ventana:** los estudiantes vuelven a la imagen en unos 2 s; antes tardaban unos 10 s.
 
 ## Créditos
 

@@ -6,3 +6,6 @@ clase-en-vivo-unachi/
 
 __pycache__/
 *.pyc
+
+# Grabaciones de clase (MP4)
+grabaciones/

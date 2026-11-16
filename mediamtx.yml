@@ -43,6 +43,13 @@ authInternalUsers:
         path: clase
       - action: read
         path: clase
+      # Voz del estudiante con la palabra: llega SIEMPRE a través de
+      # servidor_clase.py (/voz/), que exige el token del turno para publicar
+      # y la sesión del profesor para escuchar.
+      - action: publish
+        path: voz
+      - action: read
+        path: voz
       - action: api
       - action: metrics
 
@@ -100,9 +107,20 @@ webrtcTrackGatherTimeout: 2s
 # Rutas: sólo existe el salón "clase"; cualquier otra ruta es rechazada.
 pathDefaults:
   source: publisher
+  # Grabación: desactivada al iniciar. El panel del profesor la activa y la
+  # desactiva en caliente (API: record / recordPath) sin cortar la transmisión.
+  record: false
+  recordFormat: fmp4
+  recordPartDuration: 1s
+  recordSegmentDuration: 4h
+  # Borrado automático de grabaciones antiguas (0s = nunca). En el modo online
+  # servidor_clase.py lo fija en 30 días (MTX_PATHDEFAULTS_RECORDDELETEAFTER).
+  recordDeleteAfter: 0s
   # Si el profesor reinicia la transmisión, la nueva sesión reemplaza a la
   # anterior en lugar de ser rechazada.
   overridePublisher: true
 
 paths:
   clase:
+  # Micrófono del estudiante con la palabra (sólo audio, una persona a la vez).
+  voz:

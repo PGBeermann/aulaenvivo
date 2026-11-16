@@ -40,6 +40,46 @@
   #proyeccion .qrgrande svg { height: 62vh; width: auto; }
   #proyeccion h1 { font-family: var(--serif); color: var(--verde); margin: 0; font-size: 5vh; }
   #proyeccion .url { font-family: ui-monospace, Consolas, monospace; font-size: 4.5vh; font-weight: 700; }
+  /* Participación */
+  .columna { display: grid; gap: 18px; align-content: start; min-width: 0; }
+  .cab-part { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+  .cab-part h2 { margin: 0 !important; }
+  .cab-part .der { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .part-cols { display: grid; grid-template-columns: minmax(220px, .9fr) minmax(0, 1.3fr); gap: 16px; }
+  @media (max-width: 760px) { .part-cols { grid-template-columns: 1fr; } }
+  .part-cols h3 { font-size: .8rem; text-transform: uppercase; letter-spacing: .04em; color: var(--gris); margin: 12px 0 6px; display: flex; gap: 6px; align-items: center; }
+  .part-cols h3:first-child { margin-top: 0; }
+  ul.personas { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+  ul.personas li { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 8px; background: var(--verde-claro); font-size: .9rem; }
+  ul.personas li.vacio { background: transparent; color: var(--gris); font-size: .82rem; padding: 2px 0; }
+  ul.personas .nom { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  ul.personas .acc { display: flex; gap: 4px; flex-shrink: 0; }
+  ul.personas.todos { max-height: 220px; overflow-y: auto; }
+  .btn.mini { padding: 4px 9px; font-size: .78rem; border-radius: 6px; }
+  .turno { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 10px 12px; border-radius: 10px;
+           background: rgba(196,18,55,.09); border: 1px solid rgba(196,18,55,.35); margin-bottom: 12px; }
+  .turno .quien { font-weight: 700; }
+  .turno small { color: var(--gris); width: 100%; }
+  .chat-caja { display: flex; flex-direction: column; min-height: 0; }
+  .chat-caja .chat-lista { height: 300px; border: 1px solid var(--borde); border-radius: 8px; padding: 6px; background: var(--tarjeta); }
+  .chat-cab { display: flex; align-items: center; gap: 10px; font-size: .82rem; color: var(--gris); margin-bottom: 6px; flex-wrap: wrap; }
+  .chat-cab a { color: inherit; }
+  .avisos { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 12px; font-size: .82rem; color: var(--gris); }
+  .avisos label, .chat-cab label { display: inline-flex; gap: 5px; align-items: center; cursor: pointer; }
+  .reacciones { position: relative; height: 0; }
+  .vista .flotante { bottom: 16px; }
+  ul.grab { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; }
+  ul.grab li { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; font-size: .85rem; padding: 6px 8px; border-radius: 8px; background: var(--verde-claro); }
+  ul.grab li.vacio { background: transparent; color: var(--gris); display: block; padding: 0; }
+  ul.grab .tam { color: var(--gris); font-size: .78rem; grid-column: 1; }
+  ul.grab .acc { grid-column: 2; grid-row: 1 / span 2; display: flex; gap: 4px; align-items: center; }
+  ul.grab .nom { font-family: ui-monospace, Consolas, monospace; overflow: hidden; text-overflow: ellipsis; }
+  /* Ventana flotante */
+  body.flotante-body { margin: 0; padding: 10px; background: var(--fondo); }
+  body.flotante-body .tarjeta { border: 0; padding: 4px; }
+  body.flotante-body .part-cols { grid-template-columns: 1fr; }
+  body.flotante-body .chat-caja .chat-lista { height: 34vh; }
+  body.flotante-body ul.personas.todos { max-height: 18vh; }
   #proyeccion .franja { position: absolute; top: 0; left: 0; right: 0; height: 1.4vh; background: var(--verde); border-bottom: .6vh solid var(--rojo); }
 </style>
 </head>
@@ -51,19 +91,21 @@
     <span class="sub">Clase en Vivo · Panel del profesor</span>
   </div>
   <div class="der">
+    <span id="insigniaGrab" class="insignia grab oculto" title="La clase se está grabando"><span class="punto"></span>GRABANDO</span>
     <span id="insignia" class="insignia"><span class="punto"></span><span id="insigniaTxt">Sin transmitir</span></span>
     <button id="btnSalir" class="btn sec oculto" style="color:#fff;border-color:rgba(255,255,255,.5);padding:5px 12px;font-size:.8rem">Cerrar sesión</button>
   </div>
 </header>
 
 <main>
+  <div class="columna">
   <section class="tarjeta">
     <h2>Transmisión de pantalla</h2>
     <div id="avisoSeguro" class="aviso oculto">
       <span id="avisoSeguroTxt">Este panel debe abrirse como <b>http://localhost:<span class="pw"></span>/profesor.html</b> en el equipo del profesor:</span>
       el navegador sólo permite capturar la pantalla en un contexto seguro (localhost o HTTPS).
     </div>
-    <div class="vista">
+    <div class="vista" id="vistaContenedor">
       <video id="vistaPrevia" autoplay muted playsinline></video>
       <div id="vistaVacia" class="vacio">Vista previa de lo que verán los estudiantes.<br>Pulse «Compartir pantalla» para comenzar.</div>
     </div>
@@ -76,7 +118,7 @@
           <option value="red">Red saturada · 720p · 10 fps</option>
         </select>
       </label>
-      <label class="campo">Audio
+      <label class="campo">Audio del profesor
         <select id="audio">
           <option value="no" selected>Sin audio (profesor en el aula)</option>
           <option value="sistema">Audio del sistema / pestaña</option>
@@ -94,6 +136,51 @@
     </div>
     <div id="msg" class="msg">Conectando con el servidor de medios…</div>
   </section>
+
+  <section class="tarjeta" id="participacion">
+    <div class="cab-part">
+      <h2>Participación</h2><span id="tabPart" class="contador" data-n="0"></span>
+      <div class="der">
+        <span id="conexionSala" class="msg" style="margin:0"></span>
+        <button id="btnFlotante" class="btn sec mini oculto" title="Ventana pequeña siempre visible mientras comparte otra ventana">⧉ Ventana flotante</button>
+      </div>
+    </div>
+    <div id="turno" class="turno oculto">
+      <span>🎤 <span class="quien" id="turnoNombre"></span> tiene la palabra · <span id="turnoTiempo">00:00</span></span>
+      <div class="nivel" title="Nivel del micrófono del estudiante"><i id="vozNivel"></i></div>
+      <label style="font-size:.82rem;display:inline-flex;gap:5px;align-items:center"><input type="checkbox" id="chkEscuchar" checked> Escuchar aquí</label>
+      <button id="btnQuitar" class="btn rojo mini">Quitar la palabra</button>
+      <small id="vozEstado"></small>
+    </div>
+    <div class="part-cols">
+      <div>
+        <h3>🎤 Piden la palabra <span id="nPide" class="contador" data-n="0"></span></h3>
+        <ul id="listaPide" class="personas"></ul>
+        <h3>✋ Manos levantadas <span id="nManos" class="contador" data-n="0"></span>
+          <button id="btnBajarTodas" class="btn mini sec oculto" style="margin-left:auto">Bajar todas</button></h3>
+        <ul id="listaManos" class="personas"></ul>
+        <h3>👥 Conectados: <span id="nTodos">0</span></h3>
+        <ul id="listaTodos" class="personas todos"></ul>
+      </div>
+      <div class="chat-caja">
+        <div class="chat-cab"><b>💬 Chat</b>
+          <label title="Si lo cierra, los estudiantes no pueden escribir (sí pueden levantar la mano y reaccionar)"><input type="checkbox" id="chkChat" checked> abierto</label>
+          <a id="lnkChat" download style="margin-left:auto">Descargar chat (.txt)</a></div>
+        <div id="chatLista" class="chat-lista" aria-live="polite"></div>
+        <form id="chatForm" class="chat-form">
+          <input id="chatTexto" maxlength="1000" placeholder="Escribir a toda la clase…" autocomplete="off">
+          <button class="btn">Enviar</button>
+        </form>
+        <div id="reacciones" class="reacciones"></div>
+      </div>
+    </div>
+    <div class="avisos">
+      <label><input type="checkbox" id="chkSonido" checked> Sonido al recibir manos, pedidos y mensajes</label>
+      <label><input type="checkbox" id="chkNotif"> Notificaciones del escritorio</label>
+      <span>Use audífonos cuando un estudiante hable, para evitar eco.</span>
+    </div>
+  </section>
+  </div>
 
   <aside style="display:grid; gap:18px; align-content:start;">
     <section class="tarjeta">
@@ -119,6 +206,17 @@
         <div class="metrica"><b id="mTiempo">00:00</b><span>en vivo</span></div>
       </div>
       <div id="msgServidor" class="msg"></div>
+    </section>
+
+    <section class="tarjeta">
+      <h2>Grabación</h2>
+      <div class="controles" style="margin-top:0">
+        <button id="btnGrabar" class="btn rojo">● Iniciar grabación</button>
+        <span id="grabTiempo" class="msg" style="margin:0;font-weight:600"></span>
+      </div>
+      <div class="msg">Se graba en el servidor lo mismo que reciben los estudiantes: la pantalla, su audio y la voz de quien tenga la palabra (MP4 · H.264). Los estudiantes ven el aviso «Grabando».</div>
+      <ul id="grabLista" class="grab"></ul>
+      <div id="grabNota" class="msg"></div>
     </section>
 
     <section class="tarjeta">
@@ -148,6 +246,8 @@
 
 <script src="vendor/qrcode.js"></script>
 <script src="config.js"></script>
+<script src="comun.js"></script>
+<script src="profesor-sala.js"></script>
 <script>
 "use strict";
 (() => {
@@ -161,7 +261,7 @@
   };
   // WHIP/WHEP pasan por el mismo servidor web (proxy hacia MediaMTX).
   const base = `${location.origin}/${C.ruta}/`;
-  let publisher = null, stream = null, inicioVivo = null, ultimoBytes = null, ultimoT = null;
+  let publisher = null, stream = null, inicioVivo = null, ultimoBytes = null, ultimoT = null, pistaMezcla = null;
 
   document.querySelectorAll(".pw").forEach((e) => (e.textContent = C.puertoWeb));
   $("ver").textContent = C.version || "";
@@ -231,7 +331,7 @@
     pc.addTransceiver("video", { direction: "sendonly" });
     const sdp = (await pc.createOffer()).sdp.toLowerCase();
     pc.close();
-    const opciones = [["h264/90000", "H.264 (máxima compatibilidad)"], ["vp8/90000", "VP8"], ["vp9/90000", "VP9"], ["av1/90000", "AV1"]];
+    const opciones = [["h264/90000", "H.264 (máxima compatibilidad)"], ["vp8/90000", "VP8 (no permite grabar)"], ["vp9/90000", "VP9"], ["av1/90000", "AV1"]];
     for (const [v, t] of opciones) if (sdp.includes(v)) $("codec").add(new Option(t, v));
   };
 
@@ -262,6 +362,9 @@
     const s = await navigator.mediaDevices.getDisplayMedia({
       video: { width: { ideal: p.w }, height: { ideal: p.h }, frameRate: { ideal: p.fps, max: p.fps } },
       audio: tipoAudio === "sistema",
+      // Que la voz del estudiante (que suena en este panel) no vuelva a entrar
+      // por la captura del sistema; los navegadores que no lo conocen lo ignoran.
+      restrictOwnAudio: true,
     });
     if (tipoAudio === "mic") {
       try {
@@ -275,22 +378,33 @@
     return s;
   };
 
-  const publicar = (s) => {
+  // Lo que se publica: el video capturado + UNA pista de audio que mezcla el
+  // audio del profesor (si lo eligió) y la voz del estudiante con la palabra.
+  const publicar = (captura, esCambio = false) => {
     const p = PRESETS[$("calidad").value];
+    window.SalaProf.conectarProfesor(captura);
+    pistaMezcla?.stop();               // copia de la sesión anterior (la mezcla sigue viva)
+    pistaMezcla = window.SalaProf.pistaAudio();
+    const salida = new MediaStream([captura.getVideoTracks()[0], pistaMezcla]);
     publisher = new window.MediaMTXWebRTCPublisher({
       url: base + "whip",
-      stream: s,
+      stream: salida,
       videoCodec: $("codec").value || "h264/90000",
       videoBitrate: p.kbps,
       audioCodec: "opus/48000",
       audioBitrate: 64,
-      audioVoice: $("audio").value === "mic",
+      audioVoice: $("audio").value !== "sistema",
       onError: (err) => msg("Reconectando: " + err, true),
-      onConnected: () => { msg("Transmitiendo. Los estudiantes pueden abrir el enlace o escanear el QR."); inicioVivo ??= Date.now(); },
+      onConnected: () => {
+        msg("Transmitiendo. Los estudiantes pueden abrir el enlace o escanear el QR."); inicioVivo ??= Date.now();
+        // Tras «Cambiar ventana», pedir a los estudiantes que se reconecten ya a la nueva sesión.
+        if (esCambio) { esCambio = false; window.Aula.accion({ rol: "prof", tipo: "reconectar" }); }
+      },
     });
   };
 
   const iniciar = async () => {
+    window.SalaProf.preparar();        // crea el contexto de audio con el clic (política de autoplay)
     try {
       $("btnIniciar").disabled = true;
       stream = await capturar();
@@ -311,6 +425,7 @@
 
   function detener() {
     if (publisher) { publisher.close(); publisher = null; }
+    pistaMezcla?.stop(); pistaMezcla = null;
     if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; }
     $("vistaPrevia").srcObject = null;
     $("vistaVacia").classList.remove("oculto");
@@ -326,13 +441,14 @@
   // Cambiar de ventana sin cortar a los estudiantes: nueva captura y nueva sesión WHIP
   // (overridePublisher: true en mediamtx.yml hace que reemplace a la anterior).
   const cambiar = async () => {
+    window.SalaProf.preparar();
     let nuevo;
     try { nuevo = await capturar(); } catch { return; }
     const viejo = stream;
     if (publisher) publisher.close();
     stream = nuevo;
     $("vistaPrevia").srcObject = stream;
-    publicar(stream);
+    publicar(stream, true);
     viejo?.getTracks().forEach((t) => t.stop()); // stop() no dispara el evento "ended"
   };
 
@@ -340,6 +456,7 @@
   $("btnDetener").onclick = detener;
   $("btnCambiar").onclick = cambiar;
   window.addEventListener("beforeunload", () => publisher?.close());
+  window.SalaProf.iniciar();
 
   // ---------- Estado (espectadores, bitrate, tiempo) ----------
   const mmss = (ms) => { const s = Math.floor(ms / 1000); const h = Math.floor(s / 3600);

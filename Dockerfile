@@ -26,6 +26,7 @@ COPY web ./web
 RUN python servidor_clase.py --solo-descargar \
  && /app/mediamtx/mediamtx --help > /dev/null \
  && useradd --system --uid 10001 --no-create-home clase \
+ && mkdir -p /app/grabaciones \
  && chown -R clase:clase /app
 
 USER clase

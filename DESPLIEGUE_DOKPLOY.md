@@ -125,6 +125,10 @@ Pestaña **Advanced → Ports → Add Port**. Agregue **dos** puertos:
 - Use **Ingress** (el valor predeterminado). Con **Host**, Dokploy advierte que al redesplegar el contenedor viejo puede retener el puerto y el nuevo no arranca; habría que detenerlo e iniciarlo a mano. Ingress se probó en un VPS de Hostinger con Dokploy v0.30 y el video funciona.
 - Si necesita otro número, cambie también `PUERTO_MEDIOS` en las variables y use ese mismo número en ambas columnas y en el firewall.
 
+### Volumen para las grabaciones
+
+Pestaña **Advanced → Volumes → Add Volume**: tipo **Volume Mount**, nombre `clase-grabaciones` y **Mount Path `/app/grabaciones`**. Sin este volumen, las grabaciones de clase se pierden en cada despliegue. Dokploy puede respaldar el volumen con *Volume Backups*.
+
 ## 8. Desplegar
 
 1. Pulse **Deploy** (arriba a la derecha).
@@ -138,6 +142,7 @@ INF [WebRTC] started with listeners on 127.0.0.1:8889 (TCP/HTTP), :8189 (UDP/ICE
 ```
 
 4. Abra `https://clase.su-dominio.com/salud`. Debe responder `{"ok": true}`.
+5. Abra `https://clase.su-dominio.com/version` para confirmar la versión desplegada (por ejemplo, `{"version": "2.0.0", ...}`). En **Logs** aparece la misma versión al iniciar.
 
 Para que cada cambio en GitHub se despliegue solo, active **Auto Deploy** en la pestaña General (con el proveedor GitHub) o use el webhook de la pestaña **Deployments**.
 
@@ -148,6 +153,8 @@ Para que cada cambio en GitHub se despliegue solo, active **Auto Deploy** en la 
 3. Pulse **Compartir pantalla** y elija la pantalla, ventana o pestaña.
 4. **Estudiantes**: abren el enlace, escriben el código y ven la clase. Si el profesor todavía no transmite, verán «Esperando al profesor…» y la imagen aparece sola cuando comienza.
 5. Para el audio de la clase, elija **Micrófono** en «Audio» antes de compartir. Desde casa, los estudiantes no oyen al profesor de otro modo.
+6. Durante la clase, el recuadro **Participación** muestra el chat, las manos levantadas y los pedidos de palabra. Con **Dar la palabra**, el estudiante activa su micrófono y toda la clase lo escucha.
+7. Para grabar, pulse **● Iniciar grabación**. Los detalles de estas funciones están en [README.md](README.md), en «Participación de los estudiantes» y «Grabación de la clase».
 
 ### Transmitir con OBS Studio (opcional)
 
@@ -169,6 +176,10 @@ El VPS envía una copia del video a cada estudiante:
 Una clase de 1 hora con 30 estudiantes en el perfil Equilibrado transfiere unos **20 GB** de salida. Revise el tráfico mensual incluido en su plan de Hostinger (KVM 1: 4 TB; KVM 2: 8 TB).
 
 Si los estudiantes tienen Internet lento (datos móviles), use el perfil **Red saturada**.
+
+**Turno de palabra:** la voz del estudiante (≈ 64 kbps) va del estudiante al servidor y del servidor al profesor. Desde ahí viaja dentro de la transmisión normal, así que no aumenta el tráfico hacia los demás estudiantes.
+
+**Grabación:** ocupa en disco aproximadamente el bitrate del perfil por la duración; 1 h en el perfil *Equilibrado* son unos 0,7 GB. Las grabaciones se borran solas a los 30 días.
 
 ## 11. Solución de problemas
 

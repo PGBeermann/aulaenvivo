@@ -33,8 +33,10 @@ Profesor (este equipo)                                   Estudiantes (misma Wi-F
 | `mediamtx.yml` | Configuración endurecida de MediaMTX |
 | `Dockerfile` | Imagen para el modo online en un VPS (Dokploy) |
 | `DESPLIEGUE_DOKPLOY.md` | Guía paso a paso para el VPS de Hostinger con Dokploy |
-| `web/profesor.html` | Panel del profesor: compartir pantalla, QR, espectadores y Mbps |
-| `web/index.html` | Página del estudiante: video en vivo, pantalla completa y reconexión automática |
+| `web/profesor.html` | Panel del profesor: compartir pantalla, QR, espectadores y Mbps, participación y grabación |
+| `web/profesor-sala.js` | Chat, manos, turno de palabra, mezcla de audio y grabaciones (profesor) |
+| `web/index.html` | Página del estudiante: video, chat, expresiones, mano y pedir la palabra |
+| `web/comun.js` | Funciones compartidas (eventos en vivo, chat y expresiones) |
 | `web/acceso.html` | Pantalla de contraseña del profesor y código de estudiantes (solo modo online) |
 | `web/estilo.css` | Identidad visual UNACHI (verde Pantone 364 C, rojo Pantone 187 C) |
 | `web/vendor/qrcode.js` | Generador de QR sin conexión (K. Arase, licencia MIT) |
@@ -56,6 +58,12 @@ Profesor (este equipo)                                   Estudiantes (misma Wi-F
    - **Cambiar ventana** cambia lo que se comparte; los estudiantes se reconectan solos en unos 2 segundos.
    - El recuadro **Estado** muestra cuántos espectadores hay y el ancho de banda en uso.
 7. Para terminar, pulse **Detener transmisión** y cierre la ventana de consola (o pulse Ctrl+C).
+
+### Chat, mano, turno de palabra y grabación
+
+- **Funciones en el aula:** chat con expresiones, mano levantada, pedir la palabra y grabación. Se explican en [README.md](README.md), secciones «Participación de los estudiantes» y «Grabación de la clase».
+- **Turno de palabra en el aula:** el estudiante recibe el aviso, pero habla en voz alta en el salón. El navegador solo permite el micrófono con HTTPS (versión VPS).
+- **Grabaciones:** quedan en la carpeta `grabaciones/clase/`, junto a este programa.
 
 ### Perfiles de calidad
 
