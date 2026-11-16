@@ -74,7 +74,7 @@ from collections import deque
 from pathlib import Path
 
 # Versión del programa: visible en /version y en el registro al iniciar.
-VERSION = "2.0.0"
+VERSION = "2.0.1"
 FUNCIONES = ["chat", "expresiones", "mano", "palabra", "grabacion"]
 MEDIAMTX_VERSION = "v1.21.1"
 RUTA_STREAM = "clase"
@@ -665,6 +665,10 @@ PREFIJOS_MEDIAMTX = (f"/{RUTA_STREAM}/", f"/{RUTA_VOZ}/")
 class ManejadorAula(http.server.SimpleHTTPRequestHandler):
     server_version = "ClaseEnVivo"
     sys_version = ""
+    # Declarar UTF-8 (acentos y emojis) en lugar de depender del navegador.
+    extensions_map = {**http.server.SimpleHTTPRequestHandler.extensions_map,
+                      ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8",
+                      ".css": "text/css; charset=utf-8"}
 
     def __init__(self, *a, **kw):
         super().__init__(*a, directory=str(DIR_WEB), **kw)
